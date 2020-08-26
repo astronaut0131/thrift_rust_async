@@ -9,6 +9,7 @@ documentation = "https://thrift.apache.org"
 readme = "README.md"
 exclude = ["Makefile*", "test/**", "*.iml"]
 keywords = ["thrift"]
+edition = "2018"
 
 [dependencies]
 ordered-float = "1.0"
