@@ -535,7 +535,14 @@ dependencies = [
  "log",
  "ordered-float",
  "threadpool",
+ "try_from",
 ]
+
+[[package]]
+name = "try_from"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "923a7ee3e97dbfe8685261beb4511cc9620a1252405d02693d43169729570111"
 
 [[package]]
 name = "unicode-xid"

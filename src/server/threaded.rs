@@ -151,6 +151,7 @@ where
         processor: PRC,
         num_workers: usize,
     ) -> TServer<PRC, RTF, IPF, WTF, OPF> {
+        println!("into server!");
         TServer {
             r_trans_factory: read_transport_factory,
             i_proto_factory: input_protocol_factory,
