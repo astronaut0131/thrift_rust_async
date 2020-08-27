@@ -15,7 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use std::net::{TcpListener, TcpStream, ToSocketAddrs};
+use async_std::{
+    io::BufReader,
+    net::{TcpListener, TcpStream, ToSocketAddrs},
+    prelude::*,
+    task,
+};
 use std::sync::Arc;
 use threadpool::ThreadPool;
 
@@ -170,21 +175,33 @@ where
     ///
     /// Return `Err` when the server cannot bind to `listen_address` or there
     /// is an unrecoverable error.
-    pub fn listen<A: ToSocketAddrs>(&mut self, listen_address: A) -> crate::Result<()> {
-        let listener = TcpListener::bind(listen_address)?;
-        for stream in listener.incoming() {
-            match stream {
-                Ok(s) => {
-                    let (i_prot, o_prot) = self.new_protocols_for_connection(s)?;
-                    let processor = self.processor.clone();
-                    self.worker_pool
-                        .execute(move || handle_incoming_connection(processor, i_prot, o_prot));
-                }
-                Err(e) => {
-                    warn!("failed to accept remote connection with error {:?}", e);
-                }
-            }
+    pub async fn listen<A: ToSocketAddrs>(&mut self, listen_address: A) -> crate::Result<()> {
+        println!("into listen");
+        let listener = TcpListener::bind(listen_address).await?;
+
+        let mut incoming = listener.incoming();
+        println!("begin listening to:");
+        while let Some(stream) = incoming.next().await {
+            // stream is a new tcp connection stream
+            let stream = stream?;
+            println!("Accepting from: {}", stream.peer_addr()?);
+            // new tcp reader thread
+            // spawn_and_log_error(connection_loop(broker_sender.clone(), stream));
         }
+
+        // for stream in listener.incoming() {
+        //     match stream {
+        //         Ok(s) => {
+        //             let (i_prot, o_prot) = self.new_protocols_for_connection(s)?;
+        //             let processor = self.processor.clone();
+        //             self.worker_pool
+        //                 .execute(move || handle_incoming_connection(processor, i_prot, o_prot));
+        //         }
+        //         Err(e) => {
+        //             warn!("failed to accept remote connection with error {:?}", e);
+        //         }
+        //     }
+        // }
 
         Err(crate::Error::Application(ApplicationError {
             kind: ApplicationErrorKind::Unknown,

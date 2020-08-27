@@ -18,7 +18,14 @@
 use std::convert::From;
 use std::io;
 use std::io::{ErrorKind, Read, Write};
-use std::net::{Shutdown, TcpStream, ToSocketAddrs};
+use async_std::{
+    io::BufReader,
+    net::{TcpListener, TcpStream, ToSocketAddrs},
+    prelude::*,
+    task,
+};
+
+use async_trait::async_trait;
 
 use super::{ReadHalf, TIoChannel, WriteHalf};
 use crate::{new_transport_error, TransportErrorKind};
@@ -95,6 +102,7 @@ impl TTcpChannel {
                     Ok(())
                 }
                 Err(e) => Err(From::from(e)),
+                _ => {}
             }
         }
     }
@@ -104,8 +112,8 @@ impl TTcpChannel {
     /// Both send and receive halves are closed, and this instance can no
     /// longer be used to communicate with another endpoint.
     pub fn close(&mut self) -> crate::Result<()> {
-        self.if_set(|s| s.shutdown(Shutdown::Both))
-            .map_err(From::from)
+        // self.if_set(|s| s.shutdown(Shutdown::Both))
+        //     .map_err(From::from)
     }
 
     fn if_set<F, T>(&mut self, mut stream_operation: F) -> io::Result<T>
@@ -162,7 +170,7 @@ impl Write for TTcpChannel {
         self.if_set(|s| s.write(b))
     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        self.if_set(|s| s.flush())
+    async fn flush(&mut self) -> io::Result<()> {
+        self.if_set(|s| s.flush().await)
     }
 }

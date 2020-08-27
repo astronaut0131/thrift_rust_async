@@ -10,7 +10,7 @@ use thrift::transport::{
 use crate::tutorial::{CalculatorSyncProcessor, CalculatorSyncHandler, Work};
 
 
-pub fn run() -> thrift::Result<()>{
+pub async fn run() -> thrift::Result<()> {
     let port = 9090;
     let protocol = "compact";
     let service = "part";
@@ -48,7 +48,9 @@ pub fn run() -> thrift::Result<()>{
         1,
     );
 
-    server.listen(listen_address.as_str())
+    println!("{:?}", server.listen(listen_address.as_str()).await);
+
+    return Ok(());
 }
 
 struct PartHandler;

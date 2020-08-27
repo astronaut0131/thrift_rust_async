@@ -31,7 +31,7 @@ async fn run_client(){
 
 fn main() {
     task::spawn(run_client());
-    thrift_server::run();
+    task::block_on(thrift_server::run());
 }
 
 fn run() -> thrift::Result<()> {
