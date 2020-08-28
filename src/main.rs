@@ -1,81 +1,18 @@
-// add extern crates here, or in your lib.rs
-extern crate ordered_float;
-extern crate try_from;
-
-// generated Rust module
-
-
-use thrift::protocol::{TCompactInputProtocol, TCompactOutputProtocol};
-use thrift::protocol::{TInputProtocol, TOutputProtocol};
-use thrift::transport::{TFramedReadTransport, TFramedWriteTransport};
-use thrift::transport::{TIoChannel, TTcpChannel};
-
-use tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
-use tutorial::{Operation, Work};
-
+use rs_thrift::server;
 use async_std::task;
+use async_std::io::Error;
 
-mod tutorial;
-mod thrift_server;
+mod client;
 
+pub type Result<T> = std::result::Result<T, Error>;
 
-async fn run_client(){
-    match run() {
-        Ok(()) => println!("client ran successfully"),
-        Err(e) => {
-            println!("client failed with {:?}", e);
-            std::process::exit(1);
-        }
-    }
+async fn run(){
+    let mut s = server::server_main::TServer::new();
+    let c = client::try_run_protocol("127.0.0.1:9090");
+
+    futures::join!(s.listen("127.0.0.1:9090"), c);
 }
 
 fn main() {
-    task::spawn(run_client());
-    task::block_on(thrift_server::run());
-}
-
-fn run() -> thrift::Result<()> {
-    //
-    // build client
-    //
-
-    println!("connect to server on 127.0.0.1:9090");
-    let mut c = TTcpChannel::new();
-    c.open("127.0.0.1:9090")?;
-
-    let (i_chan, o_chan) = c.split()?;
-
-    let i_prot = TCompactInputProtocol::new(
-        TFramedReadTransport::new(i_chan)
-    );
-    let o_prot = TCompactOutputProtocol::new(
-        TFramedWriteTransport::new(o_chan)
-    );
-
-    let mut client = CalculatorSyncClient::new(i_prot, o_prot);
-
-    //
-    // alright! - let's make some calls
-    //
-
-    // two-way, void return
-    client.ping()?;
-
-    // two-way with some return
-    let res = client.add(
-        72,
-        2
-    )?;
-    println!("multiplied 72 and 2, got {}", res);
-
-    // match res {
-    //     Ok(v) => panic!("shouldn't have succeeded with result {}", v),
-    //     Err(e) => println!("divide by zero failed with {:?}", e),
-    // }
-
-    // one-way
-    client.zip()?;
-
-    // done!
-    Ok(())
+    task::block_on(run());
 }

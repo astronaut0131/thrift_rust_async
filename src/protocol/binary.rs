@@ -19,12 +19,17 @@ use byteorder::{BigEndian, ByteOrder, ReadBytesExt, WriteBytesExt};
 use std::convert::{From, TryFrom};
 
 use super::{
-    TFieldIdentifier, TInputProtocol, TInputProtocolFactory, TListIdentifier, TMapIdentifier,
+    TInputProtocolFactory, TListIdentifier, TMapIdentifier,
     TMessageIdentifier, TMessageType,
 };
 use super::{TOutputProtocol, TOutputProtocolFactory, TSetIdentifier, TStructIdentifier, TType};
 use crate::transport::{TReadTransport, TWriteTransport};
-use crate::{ProtocolError, ProtocolErrorKind};
+use crate::transport::framed::TFramedReadTransport;
+use crate::errors::{ProtocolErrorKind, ProtocolError, Error};
+use async_trait::async_trait;
+use std::io::Cursor;
+use crate::protocol::{TInputProtocol, TFieldIdentifier};
+
 
 const BINARY_PROTOCOL_VERSION_1: u32 = 0x80010000;
 
@@ -75,14 +80,15 @@ where
     }
 }
 
+#[async_trait]
 impl<T> TInputProtocol for TBinaryInputProtocol<T>
 where
-    T: TReadTransport,
+    T: TReadTransport + std::marker::Send,
 {
     #[cfg_attr(feature = "cargo-clippy", allow(collapsible_if))]
-    fn read_message_begin(&mut self) -> crate::Result<TMessageIdentifier> {
+    async fn read_message_begin(&mut self) -> crate::Result<TMessageIdentifier> {
         let mut first_bytes = vec![0; 4];
-        self.transport.read_exact(&mut first_bytes[..])?;
+        self.transport.read(&mut first_bytes[..]).await?;
 
         // the thrift version header is intentionally negative
         // so the first check we'll do is see if the sign bit is set
@@ -91,149 +97,189 @@ where
             // apparently we got a protocol-version header - check
             // it, and if it matches, read the rest of the fields
             if first_bytes[0..2] != [0x80, 0x01] {
-                Err(crate::Error::Protocol(ProtocolError {
-                    kind: ProtocolErrorKind::BadVersion,
-                    message: format!("received bad version: {:?}", &first_bytes[0..2]),
-                }))
+                // fixme
+                let message_type: TMessageType = TryFrom::try_from(first_bytes[3])?;
+                let name = self.read_string().await?;
+                let sequence_number = self.read_i32().await?;
+                Ok(TMessageIdentifier::new(name, message_type, sequence_number))
+                // Err(crate::Error::Protocol(ProtocolError {
+                //     kind: ProtocolErrorKind::BadVersion,
+                //     message: format!("received bad version: {:?}", &first_bytes[0..2]),
+                // }))
             } else {
                 let message_type: TMessageType = TryFrom::try_from(first_bytes[3])?;
-                let name = self.read_string()?;
-                let sequence_number = self.read_i32()?;
+                let name = self.read_string().await?;
+                let sequence_number = self.read_i32().await?;
                 Ok(TMessageIdentifier::new(name, message_type, sequence_number))
             }
         } else {
             // apparently we didn't get a protocol-version header,
             // which happens if the sender is not using the strict protocol
             if self.strict {
+                // fixme
                 // we're in strict mode however, and that always
                 // requires the protocol-version header to be written first
-                Err(crate::Error::Protocol(ProtocolError {
-                    kind: ProtocolErrorKind::BadVersion,
-                    message: format!("received bad version: {:?}", &first_bytes[0..2]),
-                }))
+                // in the non-strict version the first message field
+                // is the message name. strings (byte arrays) are length-prefixed,
+                // so we've just read the length in the first 4 bytes
+                let name_size = BigEndian::read_i32(&first_bytes) as usize;
+                let mut name_buf: Vec<u8> = vec![0; name_size];
+                self.transport.read(&mut name_buf).await?;
+                let name = String::from_utf8(name_buf);
+
+                // read the rest of the fields
+                let message_type: TMessageType = self.read_byte().await.and_then(TryFrom::try_from)?;
+                let sequence_number = self.read_i32().await?;
+                Ok(TMessageIdentifier::new(name.unwrap(), message_type, sequence_number))
             } else {
                 // in the non-strict version the first message field
                 // is the message name. strings (byte arrays) are length-prefixed,
                 // so we've just read the length in the first 4 bytes
                 let name_size = BigEndian::read_i32(&first_bytes) as usize;
                 let mut name_buf: Vec<u8> = vec![0; name_size];
-                self.transport.read_exact(&mut name_buf)?;
-                let name = String::from_utf8(name_buf)?;
+                self.transport.read(&mut name_buf).await?;
+                let name = String::from_utf8(name_buf);
 
                 // read the rest of the fields
-                let message_type: TMessageType = self.read_byte().and_then(TryFrom::try_from)?;
-                let sequence_number = self.read_i32()?;
-                Ok(TMessageIdentifier::new(name, message_type, sequence_number))
+                let message_type: TMessageType = self.read_byte().await.and_then(TryFrom::try_from)?;
+                let sequence_number = self.read_i32().await?;
+                Ok(TMessageIdentifier::new(name.unwrap(), message_type, sequence_number))
             }
         }
     }
 
-    fn read_message_end(&mut self) -> crate::Result<()> {
+    async fn read_message_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn read_struct_begin(&mut self) -> crate::Result<Option<TStructIdentifier>> {
+    async fn read_struct_begin(&mut self) -> crate::Result<Option<TStructIdentifier>> {
         Ok(None)
     }
 
-    fn read_struct_end(&mut self) -> crate::Result<()> {
+    async fn read_struct_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn read_field_begin(&mut self) -> crate::Result<TFieldIdentifier> {
-        let field_type_byte = self.read_byte()?;
+    async fn read_field_begin(&mut self) -> crate::Result<TFieldIdentifier> {
+        let field_type_byte = self.read_byte().await?;
         let field_type = field_type_from_u8(field_type_byte)?;
         let id = match field_type {
             TType::Stop => Ok(0),
-            _ => self.read_i16(),
+            _ => self.read_i16().await,
         }?;
         Ok(TFieldIdentifier::new::<Option<String>, String, i16>(
             None, field_type, id,
         ))
     }
 
-    fn read_field_end(&mut self) -> crate::Result<()> {
+    async fn read_field_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn read_bytes(&mut self) -> crate::Result<Vec<u8>> {
-        let num_bytes = self.transport.read_i32::<BigEndian>()? as usize;
+    async fn read_bytes(&mut self) -> crate::Result<Vec<u8>> {
+        let num_bytes = self.read_i32().await? as usize;
         let mut buf = vec![0u8; num_bytes];
         self.transport
-            .read_exact(&mut buf)
+            .read(&mut buf).await
             .map(|_| buf)
             .map_err(From::from)
     }
 
-    fn read_bool(&mut self) -> crate::Result<bool> {
-        let b = self.read_i8()?;
+    async fn read_bool(&mut self) -> crate::Result<bool> {
+        let b = self.read_i8().await?;
         match b {
             0 => Ok(false),
             _ => Ok(true),
         }
     }
 
-    fn read_i8(&mut self) -> crate::Result<i8> {
-        self.transport.read_i8().map_err(From::from)
+    async fn read_i8(&mut self) -> crate::Result<i8> {
+        let mut buf = [0; 1];
+        self.transport.read(&mut buf).await;
+        let mut rdr = Cursor::new(buf);
+
+        rdr.read_i8()
     }
 
-    fn read_i16(&mut self) -> crate::Result<i16> {
-        self.transport.read_i16::<BigEndian>().map_err(From::from)
+    async fn read_i16(&mut self) -> crate::Result<i16> {
+        let mut buf = [0; 2];
+        self.transport.read(&mut buf).await;
+        let mut rdr = Cursor::new(buf);
+
+        rdr.read_i16::<BigEndian>()
     }
 
-    fn read_i32(&mut self) -> crate::Result<i32> {
-        self.transport.read_i32::<BigEndian>().map_err(From::from)
+    async fn read_i32(&mut self) -> crate::Result<i32> {
+        let mut buf = [0; 4];
+        self.transport.read(&mut buf).await;
+        let mut rdr = Cursor::new(buf);
+
+        rdr.read_i32::<BigEndian>()
     }
 
-    fn read_i64(&mut self) -> crate::Result<i64> {
-        self.transport.read_i64::<BigEndian>().map_err(From::from)
+    async fn read_i64(&mut self) -> crate::Result<i64> {
+        let mut buf = [0; 8];
+        self.transport.read(&mut buf).await;
+        let mut rdr = Cursor::new(buf);
+
+        rdr.read_i64::<BigEndian>()
     }
 
-    fn read_double(&mut self) -> crate::Result<f64> {
-        self.transport.read_f64::<BigEndian>().map_err(From::from)
+    async fn read_double(&mut self) -> crate::Result<f64> {
+        let mut buf = [0; 8];
+        self.transport.read(&mut buf).await;
+        let mut rdr = Cursor::new(buf);
+
+        rdr.read_f64::<BigEndian>()
     }
 
-    fn read_string(&mut self) -> crate::Result<String> {
-        let bytes = self.read_bytes()?;
-        String::from_utf8(bytes).map_err(From::from)
+    async fn read_string(&mut self) -> crate::Result<String> {
+        let bytes = self.read_bytes().await?;
+        let res = String::from_utf8(bytes);
+
+        Ok(res.unwrap())
     }
 
-    fn read_list_begin(&mut self) -> crate::Result<TListIdentifier> {
-        let element_type: TType = self.read_byte().and_then(field_type_from_u8)?;
-        let size = self.read_i32()?;
+    async fn read_list_begin(&mut self) -> crate::Result<TListIdentifier> {
+        let element_type: TType = self.read_byte().await.and_then(field_type_from_u8)?;
+        let size = self.read_i32().await?;
         Ok(TListIdentifier::new(element_type, size))
     }
 
-    fn read_list_end(&mut self) -> crate::Result<()> {
+    async fn read_list_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn read_set_begin(&mut self) -> crate::Result<TSetIdentifier> {
-        let element_type: TType = self.read_byte().and_then(field_type_from_u8)?;
-        let size = self.read_i32()?;
+    async fn read_set_begin(&mut self) -> crate::Result<TSetIdentifier> {
+        let element_type: TType = self.read_byte().await.and_then(field_type_from_u8)?;
+        let size = self.read_i32().await?;
         Ok(TSetIdentifier::new(element_type, size))
     }
 
-    fn read_set_end(&mut self) -> crate::Result<()> {
+    async fn read_set_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn read_map_begin(&mut self) -> crate::Result<TMapIdentifier> {
-        let key_type: TType = self.read_byte().and_then(field_type_from_u8)?;
-        let value_type: TType = self.read_byte().and_then(field_type_from_u8)?;
-        let size = self.read_i32()?;
+    async fn read_map_begin(&mut self) -> crate::Result<TMapIdentifier> {
+        let key_type: TType = self.read_byte().await.and_then(field_type_from_u8)?;
+        let value_type: TType = self.read_byte().await.and_then(field_type_from_u8)?;
+        let size = self.read_i32().await?;
         Ok(TMapIdentifier::new(key_type, value_type, size))
     }
 
-    fn read_map_end(&mut self) -> crate::Result<()> {
+    async fn read_map_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
     // utility
     //
 
-    fn read_byte(&mut self) -> crate::Result<u8> {
-        self.transport.read_u8().map_err(From::from)
+    async fn read_byte(&mut self) -> crate::Result<u8> {
+        let mut buf = [0; 1];
+        self.transport.read(&mut buf).await;
+        let mut rdr = Cursor::new(buf);
+
+        rdr.read_u8()
     }
 }
 
@@ -241,18 +287,18 @@ where
 #[derive(Default)]
 pub struct TBinaryInputProtocolFactory;
 
-impl TBinaryInputProtocolFactory {
-    /// Create a `TBinaryInputProtocolFactory`.
-    pub fn new() -> TBinaryInputProtocolFactory {
-        TBinaryInputProtocolFactory {}
-    }
-}
-
-impl TInputProtocolFactory for TBinaryInputProtocolFactory {
-    fn create(&self, transport: Box<dyn TReadTransport + Send>) -> Box<dyn TInputProtocol + Send> {
-        Box::new(TBinaryInputProtocol::new(transport, true))
-    }
-}
+// impl TBinaryInputProtocolFactory {
+//     /// Create a `TBinaryInputProtocolFactory`.
+//     pub fn new() -> TBinaryInputProtocolFactory {
+//         TBinaryInputProtocolFactory {}
+//     }
+// }
+//
+// impl TInputProtocolFactory for TBinaryInputProtocolFactory {
+//     fn create(&self, transport: Box<dyn TReadTransport + Send>) -> Box<dyn TInputProtocol + Send> {
+//         Box::new(TBinaryInputProtocol::new(transport, true))
+//     }
+// }
 
 /// Write messages using the Thrift simple binary encoding.
 ///
@@ -301,143 +347,176 @@ where
     }
 }
 
+
+#[async_trait]
 impl<T> TOutputProtocol for TBinaryOutputProtocol<T>
 where
-    T: TWriteTransport,
+    T: TWriteTransport + std::marker::Send,
 {
-    fn write_message_begin(&mut self, identifier: &TMessageIdentifier) -> crate::Result<()> {
+    async fn write_message_begin(&mut self, identifier: &TMessageIdentifier) -> crate::Result<()> {
         if self.strict {
             let message_type: u8 = identifier.message_type.into();
             let header = BINARY_PROTOCOL_VERSION_1 | (message_type as u32);
-            self.transport.write_u32::<BigEndian>(header)?;
-            self.write_string(&identifier.name)?;
-            self.write_i32(identifier.sequence_number)
+            // write u32
+            let mut wtr = Vec::new();
+            wtr.write_u32::<BigEndian>(header).unwrap();
+            self.transport.write(&wtr).await;
+            //
+            self.write_string(&identifier.name).await?;
+            self.write_i32(identifier.sequence_number).await
         } else {
-            self.write_string(&identifier.name)?;
-            self.write_byte(identifier.message_type.into())?;
-            self.write_i32(identifier.sequence_number)
+            self.write_string(&identifier.name).await?;
+            self.write_byte(identifier.message_type.into()).await?;
+            self.write_i32(identifier.sequence_number).await
         }
     }
 
-    fn write_message_end(&mut self) -> crate::Result<()> {
+    async fn write_message_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn write_struct_begin(&mut self, _: &TStructIdentifier) -> crate::Result<()> {
+    async fn write_struct_begin(&mut self, _: &TStructIdentifier) -> crate::Result<()> {
         Ok(())
     }
 
-    fn write_struct_end(&mut self) -> crate::Result<()> {
+    async fn write_struct_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn write_field_begin(&mut self, identifier: &TFieldIdentifier) -> crate::Result<()> {
-        if identifier.id.is_none() && identifier.field_type != TType::Stop {
-            return Err(crate::Error::Protocol(ProtocolError {
-                kind: ProtocolErrorKind::Unknown,
-                message: format!(
-                    "cannot write identifier {:?} without sequence number",
-                    &identifier
-                ),
-            }));
-        }
+    async fn write_field_begin(&mut self, identifier: &TFieldIdentifier) -> crate::Result<()> {
+        // fixme
+        // if identifier.id.is_none() && identifier.field_type != TType::Stop {
+        //     return Err(crate::Error::Protocol(ProtocolError {
+        //         kind: ProtocolErrorKind::Unknown,
+        //         message: format!(
+        //             "cannot write identifier {:?} without sequence number",
+        //             &identifier
+        //         ),
+        //     }));
+        // }
 
-        self.write_byte(field_type_to_u8(identifier.field_type))?;
+        self.write_byte(field_type_to_u8(identifier.field_type)).await?;
         if let Some(id) = identifier.id {
-            self.write_i16(id)
+            self.write_i16(id).await
         } else {
             Ok(())
         }
     }
 
-    fn write_field_end(&mut self) -> crate::Result<()> {
+    async fn write_field_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn write_field_stop(&mut self) -> crate::Result<()> {
-        self.write_byte(field_type_to_u8(TType::Stop))
+    async fn write_field_stop(&mut self) -> crate::Result<()> {
+        self.write_byte(field_type_to_u8(TType::Stop)).await
     }
 
-    fn write_bytes(&mut self, b: &[u8]) -> crate::Result<()> {
-        self.write_i32(b.len() as i32)?;
-        self.transport.write_all(b).map_err(From::from)
+    async fn write_bytes(&mut self, b: &[u8]) -> crate::Result<()> {
+        self.write_i32(b.len() as i32).await?;
+        self.transport.write(b).await;
+
+        Ok(())
     }
 
-    fn write_bool(&mut self, b: bool) -> crate::Result<()> {
+    async fn write_bool(&mut self, b: bool) -> crate::Result<()> {
         if b {
-            self.write_i8(1)
+            self.write_i8(1).await
         } else {
-            self.write_i8(0)
+            self.write_i8(0).await
         }
     }
 
-    fn write_i8(&mut self, i: i8) -> crate::Result<()> {
-        self.transport.write_i8(i).map_err(From::from)
-    }
+    async fn write_i8(&mut self, i: i8) -> crate::Result<()> {
+        let mut wtr = Vec::new();
+        wtr.write_i8(i).unwrap();
+        self.transport.write(&wtr).await;
 
-    fn write_i16(&mut self, i: i16) -> crate::Result<()> {
-        self.transport.write_i16::<BigEndian>(i).map_err(From::from)
-    }
-
-    fn write_i32(&mut self, i: i32) -> crate::Result<()> {
-        self.transport.write_i32::<BigEndian>(i).map_err(From::from)
-    }
-
-    fn write_i64(&mut self, i: i64) -> crate::Result<()> {
-        self.transport.write_i64::<BigEndian>(i).map_err(From::from)
-    }
-
-    fn write_double(&mut self, d: f64) -> crate::Result<()> {
-        self.transport.write_f64::<BigEndian>(d).map_err(From::from)
-    }
-
-    fn write_string(&mut self, s: &str) -> crate::Result<()> {
-        self.write_bytes(s.as_bytes())
-    }
-
-    fn write_list_begin(&mut self, identifier: &TListIdentifier) -> crate::Result<()> {
-        self.write_byte(field_type_to_u8(identifier.element_type))?;
-        self.write_i32(identifier.size)
-    }
-
-    fn write_list_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn write_set_begin(&mut self, identifier: &TSetIdentifier) -> crate::Result<()> {
-        self.write_byte(field_type_to_u8(identifier.element_type))?;
-        self.write_i32(identifier.size)
-    }
+    async fn write_i16(&mut self, i: i16) -> crate::Result<()> {
+        let mut wtr = Vec::new();
+        wtr.write_i16::<BigEndian>(i).unwrap();
+        self.transport.write(&wtr).await;
 
-    fn write_set_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn write_map_begin(&mut self, identifier: &TMapIdentifier) -> crate::Result<()> {
+    async fn write_i32(&mut self, i: i32) -> crate::Result<()> {
+        let mut wtr = Vec::new();
+        wtr.write_i32::<BigEndian>(i).unwrap();
+        self.transport.write(&wtr).await;
+
+        Ok(())
+    }
+
+    async fn write_i64(&mut self, i: i64) -> crate::Result<()> {
+        let mut wtr = Vec::new();
+        wtr.write_i64::<BigEndian>(i).unwrap();
+        self.transport.write(&wtr).await;
+
+        Ok(())
+    }
+
+    async fn write_double(&mut self, d: f64) -> crate::Result<()> {
+        let mut wtr = Vec::new();
+        wtr.write_f64::<BigEndian>(d).unwrap();
+        self.transport.write(&wtr).await;
+
+        Ok(())
+    }
+
+    async fn write_string(&mut self, s: &str) -> crate::Result<()> {
+        self.write_bytes(s.as_bytes()).await
+    }
+
+    async fn write_list_begin(&mut self, identifier: &TListIdentifier) -> crate::Result<()> {
+        self.write_byte(field_type_to_u8(identifier.element_type)).await?;
+        self.write_i32(identifier.size).await
+    }
+
+    async fn write_list_end(&mut self) -> crate::Result<()> {
+        Ok(())
+    }
+
+    async fn write_set_begin(&mut self, identifier: &TSetIdentifier) -> crate::Result<()> {
+        self.write_byte(field_type_to_u8(identifier.element_type)).await?;
+        self.write_i32(identifier.size).await
+    }
+
+    async fn write_set_end(&mut self) -> crate::Result<()> {
+        Ok(())
+    }
+
+    async fn write_map_begin(&mut self, identifier: &TMapIdentifier) -> crate::Result<()> {
         let key_type = identifier
             .key_type
             .expect("map identifier to write should contain key type");
-        self.write_byte(field_type_to_u8(key_type))?;
+        self.write_byte(field_type_to_u8(key_type)).await?;
         let val_type = identifier
             .value_type
             .expect("map identifier to write should contain value type");
-        self.write_byte(field_type_to_u8(val_type))?;
-        self.write_i32(identifier.size)
+        self.write_byte(field_type_to_u8(val_type)).await?;
+        self.write_i32(identifier.size).await
     }
 
-    fn write_map_end(&mut self) -> crate::Result<()> {
+    async fn write_map_end(&mut self) -> crate::Result<()> {
         Ok(())
     }
 
-    fn flush(&mut self) -> crate::Result<()> {
-        self.transport.flush().map_err(From::from)
+    async fn flush(&mut self) -> crate::Result<()> {
+        self.transport.flush().await.map_err(From::from)
     }
 
     // utility
     //
 
-    fn write_byte(&mut self, b: u8) -> crate::Result<()> {
-        self.transport.write_u8(b).map_err(From::from)
+    async fn write_byte(&mut self, b: u8) -> crate::Result<()> {
+        let mut wtr = Vec::new();
+        wtr.write_u8(b).unwrap();
+        self.transport.write(&wtr).await;
+
+        Ok(())
     }
 }
 
@@ -445,18 +524,18 @@ where
 #[derive(Default)]
 pub struct TBinaryOutputProtocolFactory;
 
-impl TBinaryOutputProtocolFactory {
-    /// Create a `TBinaryOutputProtocolFactory`.
-    pub fn new() -> TBinaryOutputProtocolFactory {
-        TBinaryOutputProtocolFactory {}
-    }
-}
-
-impl TOutputProtocolFactory for TBinaryOutputProtocolFactory {
-    fn create(&self, transport: Box<dyn TWriteTransport + Send>) -> Box<dyn TOutputProtocol + Send> {
-        Box::new(TBinaryOutputProtocol::new(transport, true))
-    }
-}
+// impl TBinaryOutputProtocolFactory {
+//     /// Create a `TBinaryOutputProtocolFactory`.
+//     pub fn new() -> TBinaryOutputProtocolFactory {
+//         TBinaryOutputProtocolFactory {}
+//     }
+// }
+//
+// impl TOutputProtocolFactory for TBinaryOutputProtocolFactory {
+//     fn create(&self, transport: Box<dyn TWriteTransport + Send>) -> Box<dyn TOutputProtocol + Send> {
+//         Box::new(TBinaryOutputProtocol::new(transport, true))
+//     }
+// }
 
 fn field_type_to_u8(field_type: TType) -> u8 {
     match field_type {
@@ -495,10 +574,12 @@ fn field_type_from_u8(b: u8) -> crate::Result<TType> {
         0x0F => Ok(TType::List),
         0x10 => Ok(TType::Utf8),
         0x11 => Ok(TType::Utf16),
-        unkn => Err(crate::Error::Protocol(ProtocolError {
-            kind: ProtocolErrorKind::InvalidData,
-            message: format!("cannot convert {} to TType", unkn),
-        })),
+        // unkn => Err(Error::Protocol(ProtocolError {
+        //     kind: ProtocolErrorKind::InvalidData,
+        //     message: format!("cannot convert {} to TType", unkn),
+        // }
+        // fixme
+        _ => {Ok(TType::I64) }
     }
 }
 
