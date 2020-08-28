@@ -4,9 +4,11 @@ use std::convert::{From, TryFrom};
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use async_trait::async_trait;
-
+pub mod stored;
 
 use crate::transport::{TReadTransport, TWriteTransport};
+use crate::{ProtocolError, ProtocolErrorKind};
+
 // Default maximum depth to which `TInputProtocol::skip` will skip a Thrift
 // field. A default is necessary because Thrift structs or collections may
 // contain nested structs and collections, which could result in indefinite
@@ -86,18 +88,18 @@ pub trait TInputProtocol {
     /// Skip a field with type `field_type` recursively until the default
     /// maximum skip depth is reached.
     async fn skip(&mut self, field_type: TType) -> crate::Result<()> {
-        return Ok(());
-        // let res = self.skip_till_depth(field_type, MAXIMUM_SKIP_DEPTH).await;
-        // res
+        // return Ok(());
+        let res = self.skip_till_depth(field_type, MAXIMUM_SKIP_DEPTH).await;
+        res
     }
     /// Skip a field with type `field_type` recursively up to `depth` levels.
     async fn skip_till_depth(&mut self, field_type: TType, depth: i8) -> crate::Result<()> {
-        // if depth == 0 {
-        //     return Err(crate::Error::Protocol(ProtocolError {
-        //         kind: ProtocolErrorKind::DepthLimit,
-        //         message: format!("cannot parse past {:?}", field_type),
-        //     }));
-        // }
+        if depth == 0 {
+            return Err(crate::Error::Protocol(ProtocolError {
+                kind: ProtocolErrorKind::DepthLimit,
+                message: format!("cannot parse past {:?}", field_type),
+            }));
+        }
 
 
         match field_type {
@@ -148,12 +150,10 @@ pub trait TInputProtocol {
                 self.read_map_end().await
             }
 
-            // u => Err(crate::Error::Protocol(ProtocolError {
-            //     kind: ProtocolErrorKind::Unknown,
-            //     message: format!("cannot skip field type {:?}", &u),
-            // })),
-            // fixme
-            _ => Result::Ok(())
+            u => Err(crate::Error::Protocol(ProtocolError {
+                kind: ProtocolErrorKind::Unknown,
+                message: format!("cannot skip field type {:?}", &u),
+            })),
         }
     }
 
@@ -557,15 +557,89 @@ impl From<TMessageType> for u8 {
 }
 
 impl TryFrom<u8> for TMessageType {
-    type Error = crate::Error;
+    type Error = crate::errors::Error;
     fn try_from(b: u8) -> Result<Self, Self::Error> {
         match b {
             0x01 => Ok(TMessageType::Call),
             0x02 => Ok(TMessageType::Reply),
             0x03 => Ok(TMessageType::Exception),
             0x04 => Ok(TMessageType::OneWay),
-            // fixme
-            _ => Ok(TMessageType::OneWay)
+            unkn => Err(crate::Error::Protocol(ProtocolError {
+                kind: ProtocolErrorKind::InvalidData,
+                message: format!("cannot convert {} to TMessageType", unkn),
+            })),
         }
     }
+}
+
+/// Compare the expected message sequence number `expected` with the received
+/// message sequence number `actual`.
+///
+/// Return `()` if `actual == expected`, `Err` otherwise.
+pub fn verify_expected_sequence_number(expected: i32, actual: i32) -> crate::Result<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(crate::Error::Application(crate::ApplicationError {
+            kind: crate::ApplicationErrorKind::BadSequenceId,
+            message: format!("expected {} got {}", expected, actual),
+        }))
+    }
+}
+
+/// Compare the expected service-call name `expected` with the received
+/// service-call name `actual`.
+///
+/// Return `()` if `actual == expected`, `Err` otherwise.
+pub fn verify_expected_service_call(expected: &str, actual: &str) -> crate::Result<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(crate::Error::Application(crate::ApplicationError {
+            kind: crate::ApplicationErrorKind::WrongMethodName,
+            message: format!("expected {} got {}", expected, actual),
+        }))
+    }
+}
+
+/// Compare the expected message type `expected` with the received message type
+/// `actual`.
+///
+/// Return `()` if `actual == expected`, `Err` otherwise.
+pub fn verify_expected_message_type(expected: TMessageType, actual: TMessageType) -> crate::Result<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(crate::Error::Application(crate::ApplicationError {
+            kind: crate::ApplicationErrorKind::InvalidMessageType,
+            message: format!("expected {} got {}", expected, actual),
+        }))
+    }
+}
+
+/// Check if a required Thrift struct field exists.
+///
+/// Return `()` if it does, `Err` otherwise.
+pub fn verify_required_field_exists<T>(field_name: &str, field: &Option<T>) -> crate::Result<()> {
+    match *field {
+        Some(_) => Ok(()),
+        None => Err(crate::Error::Protocol(crate::ProtocolError {
+            kind: crate::ProtocolErrorKind::Unknown,
+            message: format!("missing required field {}", field_name),
+        })),
+    }
+}
+
+/// Extract the field id from a Thrift field identifier.
+///
+/// `field_ident` must *not* have `TFieldIdentifier.field_type` of type `TType::Stop`.
+///
+/// Return `TFieldIdentifier.id` if an id exists, `Err` otherwise.
+pub fn field_id(field_ident: &TFieldIdentifier) -> crate::Result<i16> {
+    field_ident.id.ok_or_else(|| {
+        crate::Error::Protocol(crate::ProtocolError {
+            kind: crate::ProtocolErrorKind::Unknown,
+            message: format!("missing field in in {:?}", field_ident),
+        })
+    })
 }

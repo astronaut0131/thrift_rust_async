@@ -23,9 +23,8 @@ impl TTcpChannel {
     }
 }
 
-#[async_trait]
 impl TIoChannel for TTcpChannel {
-    async fn split(self) -> crate::Result<(ReadHalf<Self>, WriteHalf<Self>)>
+    fn split(self) -> crate::Result<(ReadHalf<Self>, WriteHalf<Self>)>
         where
             Self: Sized,
     {

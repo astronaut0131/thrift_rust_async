@@ -1,6 +1,8 @@
 pub mod socket;
 mod mem;
 pub mod framed;
+pub mod buffered;
+
 
 use async_std::io;
 use async_trait::async_trait;
@@ -18,22 +20,38 @@ pub trait TReadTransportFactory {
 }
 
 /// Identifies a transport used by `TOutputProtocol` to send bytes.
-#[async_trait]
 pub trait TWriteTransport: Write {}
 
 /// Helper type used by a server to create `TWriteTransport` instances for
 /// accepted client connections.
-#[async_trait]
 pub trait TWriteTransportFactory {
     /// Create a `TTransport` that wraps a channel over which bytes are to be sent.
     fn create(&self, channel: Box<dyn Write + Send>) -> Box<dyn TWriteTransport + Send>;
 }
 
-#[async_trait]
 impl<T> TReadTransport for T where T: Read {}
 
-#[async_trait]
 impl<T> TWriteTransport for T where T: Write {}
+
+// FIXME: implement the Debug trait for boxed transports
+impl<T> TReadTransportFactory for Box<T>
+    where
+        T: TReadTransportFactory + ?Sized,
+{
+    fn create(&self, channel: Box<dyn Read + Send>) -> Box<dyn TReadTransport + Send> {
+        (**self).create(channel)
+    }
+}
+
+impl<T> TWriteTransportFactory for Box<T>
+    where
+        T: TWriteTransportFactory + ?Sized,
+{
+    fn create(&self, channel: Box<dyn Write + Send>) -> Box<dyn TWriteTransport + Send> {
+        (**self).create(channel)
+    }
+}
+
 
 #[async_trait]
 pub trait Read {
@@ -47,10 +65,21 @@ pub trait Write {
     async fn flush(&mut self) -> io::Result<()>;
 }
 
-use std::ops::{Deref, DerefMut};
-
 
 #[async_trait]
+impl<T: Send> Write for Box<T> {
+    async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.write(buf).await
+    }
+
+    async fn flush(&mut self) -> io::Result<()> {
+        self.flush().await
+    }
+}
+
+use std::ops::{Deref, DerefMut};
+use std::hash::Hasher;
+
 pub trait TIoChannel: Read + Write {
     /// Split the channel into a readable half and a writable half, where the
     /// readable half implements `io::Read` and the writable half implements
@@ -60,7 +89,7 @@ pub trait TIoChannel: Read + Write {
     /// Returned halves may share the underlying OS channel or buffer resources.
     /// Implementations **should ensure** that these two halves can be safely
     /// used independently by concurrent threads.
-    async fn split(self) -> crate::Result<(crate::transport::ReadHalf<Self>, crate::transport::WriteHalf<Self>)>
+    fn split(self) -> crate::Result<(crate::transport::ReadHalf<Self>, crate::transport::WriteHalf<Self>)>
         where
             Self: Sized;
 }

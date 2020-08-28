@@ -141,9 +141,8 @@ impl TBufferChannel {
     }
 }
 
-#[async_trait]
 impl TIoChannel for TBufferChannel {
-    async fn split(self) -> crate::Result<(ReadHalf<Self>, WriteHalf<Self>)>
+    fn split(self) -> crate::Result<(ReadHalf<Self>, WriteHalf<Self>)>
         where
             Self: Sized,
     {

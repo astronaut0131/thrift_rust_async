@@ -197,7 +197,7 @@ impl Error {
     ///
     /// Application code **should never** call this method directly.
     pub async fn read_application_error_from_in_protocol(
-        i: &mut dyn TInputProtocol,
+        i: &mut (dyn TInputProtocol + Send),
     ) -> crate::Result<ApplicationError> {
         let mut message = "general remote error".to_owned();
         let mut kind = ApplicationErrorKind::Unknown;
@@ -248,7 +248,7 @@ impl Error {
     /// Application code **should never** call this method directly.
     pub async fn write_application_error_to_out_protocol(
         e: &ApplicationError,
-        o: &mut dyn TOutputProtocol,
+        o: &mut (dyn TOutputProtocol + Send),
     ) -> crate::Result<()> {
         o.write_struct_begin(&TStructIdentifier {
             name: "TApplicationException".to_owned(),

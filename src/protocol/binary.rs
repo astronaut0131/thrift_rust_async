@@ -29,6 +29,7 @@ use crate::errors::{ProtocolErrorKind, ProtocolError, Error};
 use async_trait::async_trait;
 use std::io::Cursor;
 use crate::protocol::{TInputProtocol, TFieldIdentifier};
+use std::borrow::Borrow;
 
 
 const BINARY_PROTOCOL_VERSION_1: u32 = 0x80010000;
@@ -74,8 +75,8 @@ where
     /// version number in the protocol header.
     pub fn new(transport: T, strict: bool) -> TBinaryInputProtocol<T> {
         TBinaryInputProtocol {
-            strict: strict,
-            transport: transport,
+            strict,
+            transport,
         }
     }
 }
@@ -97,15 +98,10 @@ where
             // apparently we got a protocol-version header - check
             // it, and if it matches, read the rest of the fields
             if first_bytes[0..2] != [0x80, 0x01] {
-                // fixme
-                let message_type: TMessageType = TryFrom::try_from(first_bytes[3])?;
-                let name = self.read_string().await?;
-                let sequence_number = self.read_i32().await?;
-                Ok(TMessageIdentifier::new(name, message_type, sequence_number))
-                // Err(crate::Error::Protocol(ProtocolError {
-                //     kind: ProtocolErrorKind::BadVersion,
-                //     message: format!("received bad version: {:?}", &first_bytes[0..2]),
-                // }))
+                Err(crate::errors::Error::Protocol(ProtocolError {
+                    kind: ProtocolErrorKind::BadVersion,
+                    message: format!("received bad version: {:?}", &first_bytes[0..2]),
+                }))
             } else {
                 let message_type: TMessageType = TryFrom::try_from(first_bytes[3])?;
                 let name = self.read_string().await?;
@@ -116,21 +112,12 @@ where
             // apparently we didn't get a protocol-version header,
             // which happens if the sender is not using the strict protocol
             if self.strict {
-                // fixme
                 // we're in strict mode however, and that always
                 // requires the protocol-version header to be written first
-                // in the non-strict version the first message field
-                // is the message name. strings (byte arrays) are length-prefixed,
-                // so we've just read the length in the first 4 bytes
-                let name_size = BigEndian::read_i32(&first_bytes) as usize;
-                let mut name_buf: Vec<u8> = vec![0; name_size];
-                self.transport.read(&mut name_buf).await?;
-                let name = String::from_utf8(name_buf);
-
-                // read the rest of the fields
-                let message_type: TMessageType = self.read_byte().await.and_then(TryFrom::try_from)?;
-                let sequence_number = self.read_i32().await?;
-                Ok(TMessageIdentifier::new(name.unwrap(), message_type, sequence_number))
+                Err(crate::Error::Protocol(ProtocolError {
+                    kind: ProtocolErrorKind::BadVersion,
+                    message: format!("received bad version: {:?}", &first_bytes[0..2]),
+                }))
             } else {
                 // in the non-strict version the first message field
                 // is the message name. strings (byte arrays) are length-prefixed,
@@ -176,6 +163,14 @@ where
         Ok(())
     }
 
+    async fn read_bool(&mut self) -> crate::Result<bool> {
+        let b = self.read_i8().await?;
+        match b {
+            0 => Ok(false),
+            _ => Ok(true),
+        }
+    }
+
     async fn read_bytes(&mut self) -> crate::Result<Vec<u8>> {
         let num_bytes = self.read_i32().await? as usize;
         let mut buf = vec![0u8; num_bytes];
@@ -185,20 +180,12 @@ where
             .map_err(From::from)
     }
 
-    async fn read_bool(&mut self) -> crate::Result<bool> {
-        let b = self.read_i8().await?;
-        match b {
-            0 => Ok(false),
-            _ => Ok(true),
-        }
-    }
-
     async fn read_i8(&mut self) -> crate::Result<i8> {
         let mut buf = [0; 1];
         self.transport.read(&mut buf).await;
         let mut rdr = Cursor::new(buf);
 
-        rdr.read_i8()
+        Ok(rdr.read_i8()?)
     }
 
     async fn read_i16(&mut self) -> crate::Result<i16> {
@@ -206,7 +193,7 @@ where
         self.transport.read(&mut buf).await;
         let mut rdr = Cursor::new(buf);
 
-        rdr.read_i16::<BigEndian>()
+        Ok(rdr.read_i16::<BigEndian>()?)
     }
 
     async fn read_i32(&mut self) -> crate::Result<i32> {
@@ -214,7 +201,7 @@ where
         self.transport.read(&mut buf).await;
         let mut rdr = Cursor::new(buf);
 
-        rdr.read_i32::<BigEndian>()
+        Ok(rdr.read_i32::<BigEndian>()?)
     }
 
     async fn read_i64(&mut self) -> crate::Result<i64> {
@@ -222,7 +209,7 @@ where
         self.transport.read(&mut buf).await;
         let mut rdr = Cursor::new(buf);
 
-        rdr.read_i64::<BigEndian>()
+        Ok(rdr.read_i64::<BigEndian>()?)
     }
 
     async fn read_double(&mut self) -> crate::Result<f64> {
@@ -230,7 +217,7 @@ where
         self.transport.read(&mut buf).await;
         let mut rdr = Cursor::new(buf);
 
-        rdr.read_f64::<BigEndian>()
+        Ok(rdr.read_f64::<BigEndian>()?)
     }
 
     async fn read_string(&mut self) -> crate::Result<String> {
@@ -279,7 +266,7 @@ where
         self.transport.read(&mut buf).await;
         let mut rdr = Cursor::new(buf);
 
-        rdr.read_u8()
+        Ok(rdr.read_u8()?)
     }
 }
 
@@ -341,8 +328,8 @@ where
     /// protocol version number in the protocol header.
     pub fn new(transport: T, strict: bool) -> TBinaryOutputProtocol<T> {
         TBinaryOutputProtocol {
-            strict: strict,
-            transport: transport,
+            strict,
+            transport,
         }
     }
 }
@@ -384,16 +371,15 @@ where
     }
 
     async fn write_field_begin(&mut self, identifier: &TFieldIdentifier) -> crate::Result<()> {
-        // fixme
-        // if identifier.id.is_none() && identifier.field_type != TType::Stop {
-        //     return Err(crate::Error::Protocol(ProtocolError {
-        //         kind: ProtocolErrorKind::Unknown,
-        //         message: format!(
-        //             "cannot write identifier {:?} without sequence number",
-        //             &identifier
-        //         ),
-        //     }));
-        // }
+        if identifier.id.is_none() && identifier.field_type != TType::Stop {
+            return Err(crate::Error::Protocol(ProtocolError {
+                kind: ProtocolErrorKind::Unknown,
+                message: format!(
+                    "cannot write identifier {:?} without sequence number",
+                    &identifier
+                ),
+            }));
+        }
 
         self.write_byte(field_type_to_u8(identifier.field_type)).await?;
         if let Some(id) = identifier.id {
@@ -411,19 +397,19 @@ where
         self.write_byte(field_type_to_u8(TType::Stop)).await
     }
 
-    async fn write_bytes(&mut self, b: &[u8]) -> crate::Result<()> {
-        self.write_i32(b.len() as i32).await?;
-        self.transport.write(b).await;
-
-        Ok(())
-    }
-
     async fn write_bool(&mut self, b: bool) -> crate::Result<()> {
         if b {
             self.write_i8(1).await
         } else {
             self.write_i8(0).await
         }
+    }
+
+    async fn write_bytes(&mut self, b: &[u8]) -> crate::Result<()> {
+        self.write_i32(b.len() as i32).await?;
+        self.transport.write(b).await;
+
+        Ok(())
     }
 
     async fn write_i8(&mut self, i: i8) -> crate::Result<()> {
@@ -521,9 +507,9 @@ where
 }
 
 /// Factory for creating instances of `TBinaryOutputProtocol`.
-#[derive(Default)]
-pub struct TBinaryOutputProtocolFactory;
-
+// #[derive(Default)]
+// pub struct TBinaryOutputProtocolFactory;
+//
 // impl TBinaryOutputProtocolFactory {
 //     /// Create a `TBinaryOutputProtocolFactory`.
 //     pub fn new() -> TBinaryOutputProtocolFactory {
@@ -532,7 +518,7 @@ pub struct TBinaryOutputProtocolFactory;
 // }
 //
 // impl TOutputProtocolFactory for TBinaryOutputProtocolFactory {
-//     fn create(&self, transport: Box<dyn TWriteTransport + Send>) -> Box<dyn TOutputProtocol + Send> {
+//     fn create(&self, transport: Box<dyn TWriteTransport>) -> Box<dyn TOutputProtocol + Send> {
 //         Box::new(TBinaryOutputProtocol::new(transport, true))
 //     }
 // }
@@ -574,12 +560,10 @@ fn field_type_from_u8(b: u8) -> crate::Result<TType> {
         0x0F => Ok(TType::List),
         0x10 => Ok(TType::Utf8),
         0x11 => Ok(TType::Utf16),
-        // unkn => Err(Error::Protocol(ProtocolError {
-        //     kind: ProtocolErrorKind::InvalidData,
-        //     message: format!("cannot convert {} to TType", unkn),
-        // }
-        // fixme
-        _ => {Ok(TType::I64) }
+        unkn => Err(Error::Protocol(ProtocolError {
+            kind: ProtocolErrorKind::InvalidData,
+            message: format!("cannot convert {} to TType", unkn),
+        }))
     }
 }
 
