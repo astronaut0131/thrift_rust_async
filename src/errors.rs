@@ -195,16 +195,16 @@ impl Error {
     /// Create an `ApplicationError` from its wire representation.
     ///
     /// Application code **should never** call this method directly.
-    pub fn read_application_error_from_in_protocol(
+    pub async fn read_application_error_from_in_protocol(
         i: &mut dyn TAsyncInputProtocol,
     ) -> crate::Result<ApplicationError> {
         let mut message = "general remote error".to_owned();
         let mut kind = ApplicationErrorKind::Unknown;
 
-        i.read_struct_begin()?;
+        i.read_struct_begin().await?;
 
         loop {
-            let field_ident = i.read_field_begin()?;
+            let field_ident = i.read_field_begin().await?;
 
             if field_ident.field_type == TType::Stop {
                 break;
@@ -216,24 +216,24 @@ impl Error {
 
             match id {
                 1 => {
-                    let remote_message = i.read_string()?;
-                    i.read_field_end()?;
+                    let remote_message = i.read_string().await?;
+                    i.read_field_end().await?;
                     message = remote_message;
                 }
                 2 => {
-                    let remote_type_as_int = i.read_i32()?;
+                    let remote_type_as_int = i.read_i32().await?;
                     let remote_kind: ApplicationErrorKind = TryFrom::try_from(remote_type_as_int)
                         .unwrap_or(ApplicationErrorKind::Unknown);
-                    i.read_field_end()?;
+                    i.read_field_end().await?;
                     kind = remote_kind;
                 }
                 _ => {
-                    i.skip(field_ident.field_type)?;
+                    i.skip(field_ident.field_type).await?;
                 }
             }
         }
 
-        i.read_struct_end()?;
+        i.read_struct_end().await?;
 
         Ok(ApplicationError {
             kind: kind,
@@ -245,29 +245,29 @@ impl Error {
     /// it to the remote.
     ///
     /// Application code **should never** call this method directly.
-    pub fn write_application_error_to_out_protocol(
+    pub async fn write_application_error_to_out_protocol(
         e: &ApplicationError,
         o: &mut dyn TAsyncOutputProtocol,
     ) -> crate::Result<()> {
         o.write_struct_begin(&TStructIdentifier {
             name: "TApplicationException".to_owned(),
-        })?;
+        }).await?;
 
         let message_field = TFieldIdentifier::new("message", TType::String, 1);
         let type_field = TFieldIdentifier::new("type", TType::I32, 2);
 
-        o.write_field_begin(&message_field)?;
-        o.write_string(&e.message)?;
-        o.write_field_end()?;
+        o.write_field_begin(&message_field).await?;
+        o.write_string(&e.message).await?;
+        o.write_field_end().await?;
 
-        o.write_field_begin(&type_field)?;
-        o.write_i32(e.kind as i32)?;
-        o.write_field_end()?;
+        o.write_field_begin(&type_field).await?;
+        o.write_i32(e.kind as i32).await?;
+        o.write_field_end().await?;
 
-        o.write_field_stop()?;
-        o.write_struct_end()?;
+        o.write_field_stop().await?;
+        o.write_struct_end().await?;
 
-        o.flush()
+        o.flush().await
     }
 }
 
