@@ -612,9 +612,11 @@ pub enum ApplicationErrorKind {
     /// specific `ProtocolErrorKind` instead.
     ProtocolError = 7,
     /// *Unknown*. Included only for compatibility with existing Thrift implementations.
-    InvalidTransform = 8, // ??
+    InvalidTransform = 8,
+    // ??
     /// Thrift endpoint requested, or is using, an unsupported encoding.
-    InvalidProtocol = 9, // ??
+    InvalidProtocol = 9,
+    // ??
     /// Thrift endpoint requested, or is using, an unsupported auto-generated client type.
     UnsupportedClientType = 10, // ??
 }

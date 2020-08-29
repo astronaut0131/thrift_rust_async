@@ -3,7 +3,7 @@ use async_std::io;
 use async_trait::async_trait;
 use std::ops::{Deref, DerefMut};
 
-mod async_buffered;
+pub mod async_buffered;
 pub mod async_framed;
 pub mod async_socket;
 
@@ -21,26 +21,28 @@ pub trait AsyncWrite {
 
 #[async_trait]
 impl<R: AsyncRead + ?Sized + Send> AsyncRead for Box<R> {
-    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>{
+    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         (**self).read(buf).await
     }
 }
 
 #[async_trait]
 impl<R: AsyncWrite + ?Sized + Send> AsyncWrite for Box<R> {
-    async fn write(&mut self, buf: &[u8]) -> io::Result<usize>{
+    async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         (**self).write(buf).await
     }
     async fn flush(&mut self) -> io::Result<()> {
         (**self).flush().await
     }
 }
+
 /// Identifies a transport used by a `TAsyncInputProtocol` to receive bytes.
 #[async_trait]
-pub trait TAsyncReadTransport: AsyncRead{}
+pub trait TAsyncReadTransport: AsyncRead {}
+
 /// Identifies a transport used by `TAsyncOutputProtocol` to send bytes.
 #[async_trait]
-pub trait TAsyncWriteTransport: AsyncWrite{}
+pub trait TAsyncWriteTransport: AsyncWrite {}
 
 impl<T> TAsyncReadTransport for T where T: AsyncRead {}
 
@@ -50,21 +52,21 @@ impl<T> TAsyncWriteTransport for T where T: AsyncWrite {}
 /// accepted client connections.
 pub trait TAsyncReadTransportFactory {
     /// Create a `TTransport` that wraps a channel over which bytes are to be read.
-    fn create(&self, channel: Box<dyn AsyncRead + Send>) -> Box<dyn TAsyncReadTransport+ Send>;
+    fn create(&self, channel: Box<dyn AsyncRead + Send>) -> Box<dyn TAsyncReadTransport + Send>;
 }
 
 /// Helper type used by a server to create `TWriteTransport` instances for
 /// accepted client connections.
 pub trait TAsyncWriteTransportFactory {
     /// Create a `TTransport` that wraps a channel over which bytes are to be sent.
-    fn create(&self, channel: Box<dyn AsyncWrite+ Send>) -> Box<dyn TAsyncWriteTransport+ Send>;
+    fn create(&self, channel: Box<dyn AsyncWrite + Send>) -> Box<dyn TAsyncWriteTransport + Send>;
 }
 
 impl<T> TAsyncReadTransportFactory for Box<T>
     where
         T: TAsyncReadTransportFactory,
 {
-    fn create(&self, channel: Box<dyn AsyncRead + Send>) -> Box<dyn TAsyncReadTransport+ Send> {
+    fn create(&self, channel: Box<dyn AsyncRead + Send>) -> Box<dyn TAsyncReadTransport + Send> {
         (**self).create(channel)
     }
 }
@@ -73,13 +75,13 @@ impl<T> TAsyncWriteTransportFactory for Box<T>
     where
         T: TAsyncWriteTransportFactory,
 {
-    fn create(&self, channel: Box<dyn AsyncWrite + Send>) -> Box<dyn TAsyncWriteTransport+ Send> {
+    fn create(&self, channel: Box<dyn AsyncWrite + Send>) -> Box<dyn TAsyncWriteTransport + Send> {
         (**self).create(channel)
     }
 }
 
-#[async_trait]
-pub trait TIoChannel: AsyncRead + AsyncWrite {
+
+pub trait TAsyncIoChannel: AsyncRead + AsyncWrite {
     /// Split the channel into a readable half and a writable half, where the
     /// readable half implements `io::AsyncRead` and the writable half implements
     /// `io::AsyncWrite`. Returns `None` if the channel was not initialized, or if it
@@ -88,7 +90,7 @@ pub trait TIoChannel: AsyncRead + AsyncWrite {
     /// Returned halves may share the underlying OS channel or buffer resources.
     /// Implementations **should ensure** that these two halves can be safely
     /// used independently by concurrent threads.
-    async fn split(self) -> crate::Result<(crate::transport::AsyncReadHalf<Self>, crate::transport::AsyncWriteHalf<Self>)>
+    fn split(self) -> crate::Result<(AsyncReadHalf<Self>, AsyncWriteHalf<Self>)>
         where
             Self: Sized;
 }

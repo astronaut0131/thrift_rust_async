@@ -1,8 +1,11 @@
-mod async_binary;
-use async_trait::async_trait;
-use crate::transport::{TAsyncReadTransport,TAsyncWriteTransport};
-use crate::errors::{ProtocolError, ProtocolErrorKind};
+pub mod async_binary;
 
+use async_trait::async_trait;
+use crate::transport::{TAsyncReadTransport, TAsyncWriteTransport};
+use crate::errors::{ProtocolError, ProtocolErrorKind};
+use std::convert::{From, TryFrom};
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 // Default maximum depth to which `TInputProtocol::skip` will skip a Thrift
 // field. A default is necessary because Thrift structs or collections may
@@ -11,7 +14,7 @@ use crate::errors::{ProtocolError, ProtocolErrorKind};
 const MAXIMUM_SKIP_DEPTH: i8 = 64;
 
 #[async_trait]
-pub trait TAsyncInputProtocol:Send{
+pub trait TAsyncInputProtocol: Send {
     /// Read the beginning of a Thrift message.
     async fn read_message_begin(&mut self) -> crate::Result<TMessageIdentifier>;
     /// Read the end of a Thrift message.
@@ -130,7 +133,7 @@ pub trait TAsyncInputProtocol:Send{
 }
 
 #[async_trait]
-pub trait TAsyncOutputProtocol:Send{
+pub trait TAsyncOutputProtocol: Send {
     /// Write the beginning of a Thrift message.
     async fn write_message_begin(&mut self, identifier: &TMessageIdentifier) -> crate::Result<()>;
     /// Write the end of a Thrift message.
@@ -376,31 +379,32 @@ impl<P> TAsyncOutputProtocol for Box<P>
 
 pub trait TAsyncInputProtocolFactory {
     // Create a `TAsyncInputProtocol` that reads bytes from `transport`.
-    fn create(&self, transport: Box<dyn TAsyncReadTransport+ Send>) -> Box<dyn TAsyncInputProtocol+ Send>;
+    fn create(&self, transport: Box<dyn TAsyncReadTransport + Send>) -> Box<dyn TAsyncInputProtocol + Send>;
 }
 
 impl<T> TAsyncInputProtocolFactory for Box<T>
     where
         T: TAsyncInputProtocolFactory + ?Sized,
 {
-    fn create(&self, transport: Box<dyn TAsyncReadTransport+ Send>) -> Box<dyn TAsyncInputProtocol+ Send> {
+    fn create(&self, transport: Box<dyn TAsyncReadTransport + Send>) -> Box<dyn TAsyncInputProtocol + Send> {
         (**self).create(transport)
     }
 }
 
 pub trait TAsyncOutputProtocolFactory {
     /// Create a `TOutputProtocol` that writes bytes to `transport`.
-    fn create(&self, transport: Box<dyn TAsyncWriteTransport+ Send>) -> Box<dyn TAsyncOutputProtocol+ Send>;
+    fn create(&self, transport: Box<dyn TAsyncWriteTransport + Send>) -> Box<dyn TAsyncOutputProtocol + Send>;
 }
 
 impl<T> TAsyncOutputProtocolFactory for Box<T>
     where
         T: TAsyncOutputProtocolFactory + ?Sized,
 {
-    fn create(&self, transport: Box<dyn TAsyncWriteTransport+ Send>) -> Box<dyn TAsyncOutputProtocol+ Send> {
+    fn create(&self, transport: Box<dyn TAsyncWriteTransport + Send>) -> Box<dyn TAsyncOutputProtocol + Send> {
         (**self).create(transport)
     }
 }
+
 /// Thrift message identifier.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TMessageIdentifier {
@@ -593,4 +597,114 @@ pub enum TType {
     Utf8,
     /// UTF-16 string. *Unsupported*.
     Utf16,
+}
+
+impl Display for TMessageType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            TMessageType::Call => write!(f, "Call"),
+            TMessageType::Reply => write!(f, "Reply"),
+            TMessageType::Exception => write!(f, "Exception"),
+            TMessageType::OneWay => write!(f, "OneWay"),
+        }
+    }
+}
+
+impl From<TMessageType> for u8 {
+    fn from(message_type: TMessageType) -> Self {
+        match message_type {
+            TMessageType::Call => 0x01,
+            TMessageType::Reply => 0x02,
+            TMessageType::Exception => 0x03,
+            TMessageType::OneWay => 0x04,
+        }
+    }
+}
+
+impl TryFrom<u8> for TMessageType {
+    type Error = crate::errors::Error;
+    fn try_from(b: u8) -> Result<Self, Self::Error> {
+        match b {
+            0x01 => Ok(TMessageType::Call),
+            0x02 => Ok(TMessageType::Reply),
+            0x03 => Ok(TMessageType::Exception),
+            0x04 => Ok(TMessageType::OneWay),
+            unkn => Err(crate::Error::Protocol(ProtocolError {
+                kind: ProtocolErrorKind::InvalidData,
+                message: format!("cannot convert {} to TMessageType", unkn),
+            })),
+        }
+    }
+}
+
+/// Compare the expected message sequence number `expected` with the received
+/// message sequence number `actual`.
+///
+/// Return `()` if `actual == expected`, `Err` otherwise.
+pub fn verify_expected_sequence_number(expected: i32, actual: i32) -> crate::Result<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(crate::Error::Application(crate::ApplicationError {
+            kind: crate::ApplicationErrorKind::BadSequenceId,
+            message: format!("expected {} got {}", expected, actual),
+        }))
+    }
+}
+
+/// Compare the expected service-call name `expected` with the received
+/// service-call name `actual`.
+///
+/// Return `()` if `actual == expected`, `Err` otherwise.
+pub fn verify_expected_service_call(expected: &str, actual: &str) -> crate::Result<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(crate::Error::Application(crate::ApplicationError {
+            kind: crate::ApplicationErrorKind::WrongMethodName,
+            message: format!("expected {} got {}", expected, actual),
+        }))
+    }
+}
+
+/// Compare the expected message type `expected` with the received message type
+/// `actual`.
+///
+/// Return `()` if `actual == expected`, `Err` otherwise.
+pub fn verify_expected_message_type(expected: TMessageType, actual: TMessageType) -> crate::Result<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(crate::Error::Application(crate::ApplicationError {
+            kind: crate::ApplicationErrorKind::InvalidMessageType,
+            message: format!("expected {} got {}", expected, actual),
+        }))
+    }
+}
+
+/// Check if a required Thrift struct field exists.
+///
+/// Return `()` if it does, `Err` otherwise.
+pub fn verify_required_field_exists<T>(field_name: &str, field: &Option<T>) -> crate::Result<()> {
+    match *field {
+        Some(_) => Ok(()),
+        None => Err(crate::Error::Protocol(crate::ProtocolError {
+            kind: crate::ProtocolErrorKind::Unknown,
+            message: format!("missing required field {}", field_name),
+        })),
+    }
+}
+
+/// Extract the field id from a Thrift field identifier.
+///
+/// `field_ident` must *not* have `TFieldIdentifier.field_type` of type `TType::Stop`.
+///
+/// Return `TFieldIdentifier.id` if an id exists, `Err` otherwise.
+pub fn field_id(field_ident: &TFieldIdentifier) -> crate::Result<i16> {
+    field_ident.id.ok_or_else(|| {
+        crate::Error::Protocol(crate::ProtocolError {
+            kind: crate::ProtocolErrorKind::Unknown,
+            message: format!("missing field in in {:?}", field_ident),
+        })
+    })
 }

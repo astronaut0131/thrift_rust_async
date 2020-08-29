@@ -17,13 +17,11 @@ use crate::transport::async_framed::TAsyncFramedReadTransport;
 use crate::transport::AsyncRead;
 use crate::{ApplicationError, ApplicationErrorKind};
 
-pub struct TServer {
-}
+pub struct TServer {}
 
 impl TServer {
     pub fn new() -> TServer {
-        TServer {
-        }
+        TServer {}
     }
 
     pub async fn listen<A: ToSocketAddrs>(&mut self, listen_address: A) -> crate::Result<()> {

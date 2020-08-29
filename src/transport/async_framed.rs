@@ -208,10 +208,11 @@ impl TAsyncFramedReadTransportFactory {
 
 impl TAsyncReadTransportFactory for TAsyncFramedReadTransportFactory {
     /// Create a `TAsyncFramedReadTransport`.
-    fn create(&self, channel: Box<dyn AsyncRead+ Send>) -> Box<dyn TAsyncReadTransport+ Send> {
+    fn create(&self, channel: Box<dyn AsyncRead + Send>) -> Box<dyn TAsyncReadTransport + Send> {
         Box::new(TAsyncFramedReadTransport::new(channel))
     }
 }
+
 /// Factory for creating instances of `TAsyncFramedWriteTransport`.
 #[derive(Default)]
 pub struct TAsyncFramedWriteTransportFactory;
@@ -224,7 +225,7 @@ impl TAsyncFramedWriteTransportFactory {
 
 impl TAsyncWriteTransportFactory for TAsyncFramedWriteTransportFactory {
     /// Create a `TAsyncFramedWriteTransport`.
-    fn create(&self, channel: Box<dyn AsyncWrite+ Send>) -> Box<dyn TAsyncWriteTransport+ Send> {
+    fn create(&self, channel: Box<dyn AsyncWrite + Send>) -> Box<dyn TAsyncWriteTransport + Send> {
         Box::new(TAsyncFramedWriteTransport::new(channel))
     }
 }

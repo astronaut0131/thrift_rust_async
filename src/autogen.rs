@@ -29,16 +29,17 @@ use crate::protocol::{TAsyncInputProtocol, TAsyncOutputProtocol};
 pub trait TThriftClient {
     /// Returns the input protocol used to read serialized Thrift messages
     /// from the Thrift server.
-    fn i_prot_mut(&mut self) -> &mut dyn TAsyncInputProtocol;
+    fn i_prot_mut(&mut self) -> &mut (dyn TAsyncInputProtocol + Send);
     /// Returns the output protocol used to write serialized Thrift messages
     /// to the Thrift server.
-    fn o_prot_mut(&mut self) -> &mut dyn TAsyncOutputProtocol;
+    fn o_prot_mut(&mut self) -> &mut (dyn TAsyncOutputProtocol + Send);
     /// Returns the sequence number of the last message written to the Thrift
     /// server. Returns `0` if no messages have been written. Sequence
     /// numbers should *never* be negative, and this method returns an `i32`
     /// simply because the Thrift protocol encodes sequence numbers as `i32` on
     /// the wire.
-    fn sequence_number(&self) -> i32; // FIXME: consider returning a u32
+    fn sequence_number(&self) -> i32;
+    // FIXME: consider returning a u32
     /// Increments the sequence number, indicating that a message with that
     /// number has been sent to the Thrift server.
     fn increment_sequence_number(&mut self) -> i32;

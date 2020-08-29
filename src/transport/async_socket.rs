@@ -1,10 +1,10 @@
 use async_std::net::TcpStream;
 use async_std::io;
-use crate::transport::{AsyncWrite, AsyncRead, AsyncReadHalf, AsyncWriteHalf, TIoChannel};
+use crate::transport::{AsyncWrite, AsyncRead, AsyncReadHalf, AsyncWriteHalf, TAsyncIoChannel};
 use async_trait::async_trait;
 use async_std::prelude::*;
 use async_std::io::ErrorKind;
-
+use crate::errors::{new_transport_error, TransportErrorKind};
 
 #[derive(Debug, Default)]
 pub struct TAsyncTcpChannel {
@@ -23,19 +23,18 @@ impl TAsyncTcpChannel {
     }
 }
 
-#[async_trait]
-impl TIoChannel for TAsyncTcpChannel {
-    async fn split(self) -> crate::Result<(AsyncReadHalf<Self>, AsyncWriteHalf<Self>)>
+impl TAsyncIoChannel for TAsyncTcpChannel {
+    fn split(self) -> crate::Result<(AsyncReadHalf<Self>, AsyncWriteHalf<Self>)>
         where
             Self: Sized,
     {
-        let async_read_half = AsyncReadHalf::new(TAsyncTcpChannel {
+        let read_half = AsyncReadHalf::new(TAsyncTcpChannel {
             stream: self.stream.clone()
         });
-        let async_write_half = AsyncWriteHalf::new(TAsyncTcpChannel {
+        let write_half = AsyncWriteHalf::new(TAsyncTcpChannel {
             stream: self.stream.clone()
         });
-        Result::Ok((async_read_half, async_write_half))
+        Result::Ok((read_half, write_half))
     }
 }
 
@@ -57,6 +56,7 @@ impl AsyncRead for TAsyncTcpChannel {
 #[async_trait]
 impl AsyncWrite for TAsyncTcpChannel {
     async fn write(&mut self, b: &[u8]) -> io::Result<usize> {
+        println!("in {:?}", b);
         if let Some(ref mut s) = self.stream {
             s.write(b).await
         } else {
@@ -68,8 +68,14 @@ impl AsyncWrite for TAsyncTcpChannel {
     }
 
     async fn flush(&mut self) -> io::Result<()> {
-        //self.if_set(|s| s.write_all().await)
-        Ok(())
+        if let Some(ref mut s) = self.stream {
+            s.flush().await
+        } else {
+            Err(io::Error::new(
+                ErrorKind::NotConnected,
+                "tcp endpoint not connected",
+            ))
+        }
     }
 }
 
