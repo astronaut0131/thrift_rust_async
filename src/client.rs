@@ -55,10 +55,10 @@ pub async fn run_client(addr: impl ToSocketAddrs) -> thrift::Result<()> {
     let (i_chan, o_chan) = c.split()?;
 
     let i_prot = TAsyncBinaryInputProtocol::new(
-        TAsyncBufferedReadTransport::new(i_chan), true,
+        TAsyncFramedReadTransport::new(i_chan), true,
     );
     let o_prot = TAsyncBinaryOutputProtocol::new(
-        TAsyncBufferedWriteTransport::new(o_chan), true,
+        TAsyncFramedWriteTransport::new(o_chan), true,
     );
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);

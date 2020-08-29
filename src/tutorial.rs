@@ -197,8 +197,6 @@ impl<H: CalculatorSyncHandler + Send + Sync> TAsyncProcessor for CalculatorSyncP
             }
         };
         thrift::server::handle_process_result(&message_ident, res, o_prot).await;
-
-        println!("{:?}", message_ident);
         Ok(())
     }
 }
