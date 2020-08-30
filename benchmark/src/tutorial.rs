@@ -7,7 +7,7 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
 extern crate ordered_float;
-extern crate thrift;
+extern crate async_thrift;
 extern crate try_from;
 
 use ordered_float::OrderedFloat;
@@ -21,14 +21,14 @@ use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use try_from::TryFrom;
 
-use thrift::{ApplicationError, ApplicationErrorKind, ProtocolError, ProtocolErrorKind, TThriftClient};
-use thrift::protocol::{TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TAsyncInputProtocol, TAsyncOutputProtocol, TSetIdentifier, TStructIdentifier, TType};
-use thrift::protocol::field_id;
-use thrift::protocol::verify_expected_message_type;
-use thrift::protocol::verify_expected_sequence_number;
-use thrift::protocol::verify_expected_service_call;
-use thrift::protocol::verify_required_field_exists;
-use thrift::server::TAsyncProcessor;
+use async_thrift::{ApplicationError, ApplicationErrorKind, ProtocolError, ProtocolErrorKind, TThriftClient};
+use async_thrift::protocol::{TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TAsyncInputProtocol, TAsyncOutputProtocol, TSetIdentifier, TStructIdentifier, TType};
+use async_thrift::protocol::field_id;
+use async_thrift::protocol::verify_expected_message_type;
+use async_thrift::protocol::verify_expected_sequence_number;
+use async_thrift::protocol::verify_expected_service_call;
+use async_thrift::protocol::verify_required_field_exists;
+use async_thrift::server::TAsyncProcessor;
 
 // added
 use async_trait::async_trait;
@@ -44,7 +44,7 @@ pub trait TCalculatorSyncClient {
     /// and optionally a list of exceptions that it may throw. Note that argument
     /// lists and exception lists are specified using the exact same syntax as
     /// field lists in struct or exception definitions.
-    async fn add(&mut self, num1: i32, num2: i32) -> thrift::Result<i32>;
+    async fn add(&mut self, num1: i32, num2: i32) -> async_thrift::Result<i32>;
 }
 
 
@@ -77,7 +77,7 @@ impl<IP, OP> TCalculatorSyncClientMarker for CalculatorSyncClient<IP, OP> where 
 
 #[async_trait]
 impl<C: TThriftClient + TCalculatorSyncClientMarker + Send> TCalculatorSyncClient for C {
-    async fn add(&mut self, num1: i32, num2: i32) -> thrift::Result<i32> {
+    async fn add(&mut self, num1: i32, num2: i32) -> async_thrift::Result<i32> {
         (
             {
                 self.increment_sequence_number();
@@ -94,9 +94,9 @@ impl<C: TThriftClient + TCalculatorSyncClientMarker + Send> TCalculatorSyncClien
             verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
             verify_expected_service_call("add", &message_ident.name)?;
             if message_ident.message_type == TMessageType::Exception {
-                let remote_error = thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
                 self.i_prot_mut().read_message_end().await?;
-                return Err(thrift::Error::Application(remote_error));
+                return Err(async_thrift::Error::Application(remote_error));
             }
             verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
             let result = AddResult::read_from_in_protocol(self.i_prot_mut()).await?;
@@ -115,7 +115,7 @@ pub trait CalculatorSyncHandler {
     /// and optionally a list of exceptions that it may throw. Note that argument
     /// lists and exception lists are specified using the exact same syntax as
     /// field lists in struct or exception definitions.
-    fn handle_add(&self, num1: i32, num2: i32) -> thrift::Result<i32>;
+    fn handle_add(&self, num1: i32, num2: i32) -> async_thrift::Result<i32>;
 }
 
 pub struct CalculatorSyncProcessor<H: CalculatorSyncHandler + Send> {
@@ -128,7 +128,7 @@ impl<H: CalculatorSyncHandler + Send> CalculatorSyncProcessor<H> {
             handler,
         }
     }
-    async fn process_add(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> thrift::Result<()> {
+    async fn process_add(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
         TCalculatorProcessFunctions::process_add(&self.handler, incoming_sequence_number, i_prot, o_prot).await;
 
         return Ok(());
@@ -138,7 +138,7 @@ impl<H: CalculatorSyncHandler + Send> CalculatorSyncProcessor<H> {
 pub struct TCalculatorProcessFunctions;
 
 impl TCalculatorProcessFunctions {
-    pub async fn process_add<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> thrift::Result<()> {
+    pub async fn process_add<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
         let args = AddArgs::read_from_in_protocol(i_prot).await?;
         match handler.handle_add(args.num1, args.num2) {
             Ok(handler_return) => {
@@ -151,10 +151,10 @@ impl TCalculatorProcessFunctions {
             }
             Err(e) => {
                 match e {
-                    thrift::Error::Application(app_err) => {
+                    async_thrift::Error::Application(app_err) => {
                         let message_ident = TMessageIdentifier::new("add", TMessageType::Exception, incoming_sequence_number);
                         o_prot.write_message_begin(&message_ident).await?;
-                        thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
                         o_prot.write_message_end().await?;
                         o_prot.flush().await
                     }
@@ -167,7 +167,7 @@ impl TCalculatorProcessFunctions {
                         };
                         let message_ident = TMessageIdentifier::new("add", TMessageType::Exception, incoming_sequence_number);
                         o_prot.write_message_begin(&message_ident).await?;
-                        thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
                         o_prot.write_message_end().await?;
                         o_prot.flush().await
                     }
@@ -179,7 +179,7 @@ impl TCalculatorProcessFunctions {
 
 #[async_trait]
 impl<H: CalculatorSyncHandler + Send + Sync> TAsyncProcessor for CalculatorSyncProcessor<H> {
-    async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> thrift::Result<()> {
+    async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
         let message_ident = i_prot.read_message_begin().await?;
         let res = match &*message_ident.name {
             "add" => {
@@ -187,7 +187,7 @@ impl<H: CalculatorSyncHandler + Send + Sync> TAsyncProcessor for CalculatorSyncP
             }
             method => {
                 Err(
-                    thrift::Error::Application(
+                    async_thrift::Error::Application(
                         ApplicationError::new(
                             ApplicationErrorKind::UnknownMethod,
                             format!("unknown method {}", method),
@@ -196,7 +196,7 @@ impl<H: CalculatorSyncHandler + Send + Sync> TAsyncProcessor for CalculatorSyncP
                 )
             }
         };
-        thrift::server::handle_process_result(&message_ident, res, o_prot).await;
+        async_thrift::server::handle_process_result(&message_ident, res, o_prot).await;
         Ok(())
     }
 }
@@ -212,7 +212,7 @@ struct AddArgs {
 }
 
 impl AddArgs {
-    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> thrift::Result<AddArgs> {
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<AddArgs> {
         i_prot.read_struct_begin().await?;
         let mut f_1: Option<i32> = None;
         let mut f_2: Option<i32> = None;
@@ -246,7 +246,7 @@ impl AddArgs {
         };
         Ok(ret)
     }
-    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> thrift::Result<()> {
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
         let struct_ident = TStructIdentifier::new("add_args");
         o_prot.write_struct_begin(&struct_ident).await?;
         o_prot.write_field_begin(&TFieldIdentifier::new("num1", TType::I32, 1)).await?;
@@ -270,7 +270,7 @@ struct AddResult {
 }
 
 impl AddResult {
-    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> thrift::Result<AddResult> {
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<AddResult> {
         i_prot.read_struct_begin().await?;
         let mut f_0: Option<i32> = None;
         loop {
@@ -296,7 +296,7 @@ impl AddResult {
         };
         Ok(ret)
     }
-    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> thrift::Result<()> {
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
         let struct_ident = TStructIdentifier::new("AddResult");
         o_prot.write_struct_begin(&struct_ident).await?;
         if let Some(fld_var) = self.result_value {
@@ -310,12 +310,12 @@ impl AddResult {
         o_prot.write_field_stop().await?;
         o_prot.write_struct_end().await
     }
-    fn ok_or(self) -> thrift::Result<i32> {
+    fn ok_or(self) -> async_thrift::Result<i32> {
         if self.result_value.is_some() {
             Ok(self.result_value.unwrap())
         } else {
             Err(
-                thrift::Error::Application(
+                async_thrift::Error::Application(
                     ApplicationError::new(
                         ApplicationErrorKind::MissingResult,
                         "no result received for Add",

@@ -98,6 +98,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "async_thrift"
+version = "0.14.0"
+dependencies = [
+ "async-std",
+ "async-trait",
+ "byteorder",
+ "futures",
+ "integer-encoding",
+ "log",
+ "ordered-float",
+ "threadpool",
+ "try_from",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -108,6 +123,22 @@ name = "autocfg"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
+
+[[package]]
+name = "benchmark"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "async-trait",
+ "async_thrift",
+ "byteorder",
+ "futures",
+ "integer-encoding",
+ "log",
+ "ordered-float",
+ "threadpool",
+ "try_from",
+]
 
 [[package]]
 name = "blocking"
@@ -533,21 +564,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
 dependencies = [
  "num_cpus",
-]
-
-[[package]]
-name = "thrift"
-version = "0.14.0"
-dependencies = [
- "async-std",
- "async-trait",
- "byteorder",
- "futures",
- "integer-encoding",
- "log",
- "ordered-float",
- "threadpool",
- "try_from",
 ]
 
 [[package]]

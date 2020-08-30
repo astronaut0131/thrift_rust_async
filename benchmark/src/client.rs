@@ -10,14 +10,14 @@ use async_std::io::Error;
 pub type Result<T> = std::result::Result<T, Error>;
 
 
-use thrift::transport::async_socket::TAsyncTcpChannel;
-use thrift::transport::async_framed::{TAsyncFramedWriteTransport, TAsyncFramedReadTransport};
-use thrift::transport::{AsyncWrite, TAsyncIoChannel};
-use thrift::protocol::{TFieldIdentifier, TType};
-use thrift::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
-use thrift::protocol::TAsyncOutputProtocol;
+use async_thrift::transport::async_socket::TAsyncTcpChannel;
+use async_thrift::transport::async_framed::{TAsyncFramedWriteTransport, TAsyncFramedReadTransport};
+use async_thrift::transport::{AsyncWrite, TAsyncIoChannel};
+use async_thrift::protocol::{TFieldIdentifier, TType};
+use async_thrift::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
+use async_thrift::protocol::TAsyncOutputProtocol;
 use crate::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
-use thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
+use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 
 
 // test transport
@@ -48,7 +48,7 @@ pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
 }
 
 // test client
-pub async fn run_client(addr: impl ToSocketAddrs) -> thrift::Result<()> {
+pub async fn run_client(addr: impl ToSocketAddrs) -> async_thrift::Result<()> {
     let stream = TcpStream::connect(addr).await?;
     let mut c = TAsyncTcpChannel::with_stream(stream);
 

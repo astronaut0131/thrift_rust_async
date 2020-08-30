@@ -1,9 +1,9 @@
-use thrift::server;
+use async_thrift::server;
 use async_std::task;
 use async_std::io::Error;
 use crate::tutorial::{CalculatorSyncProcessor, CalculatorSyncHandler};
-use thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
-use thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
+use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
+use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
 
 mod client;
 mod tutorial;
@@ -34,7 +34,7 @@ fn main() {
 struct PartHandler;
 
 impl CalculatorSyncHandler for PartHandler {
-    fn handle_add(&self, num1: i32, num2: i32) -> thrift::Result<i32> {
+    fn handle_add(&self, num1: i32, num2: i32) -> async_thrift::Result<i32> {
         Ok(num1 + num2)
     }
 }
