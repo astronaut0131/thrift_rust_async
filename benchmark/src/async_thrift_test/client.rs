@@ -1,6 +1,7 @@
 // only for test!!!
 //
 
+use std::time::{SystemTime, UNIX_EPOCH};
 use async_std::{
     net::{TcpListener, TcpStream, ToSocketAddrs},
     task,
@@ -16,8 +17,9 @@ use async_thrift::transport::{AsyncWrite, TAsyncIoChannel};
 use async_thrift::protocol::{TFieldIdentifier, TType};
 use async_thrift::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
 use async_thrift::protocol::TAsyncOutputProtocol;
-use crate::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
+use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
+use time::Duration;
 
 
 // test transport
@@ -49,6 +51,9 @@ pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
 
 // test client
 pub async fn run_client(addr: impl ToSocketAddrs) -> async_thrift::Result<()> {
+    // time
+    let start = time::now();
+
     let stream = TcpStream::connect(addr).await?;
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
@@ -63,11 +68,18 @@ pub async fn run_client(addr: impl ToSocketAddrs) -> async_thrift::Result<()> {
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
 
-    let res = client.add(
-        72,
-        2,
-    ).await?;
-    println!("multiplied 72 and 2, got {}", res);
+    let mut sum = 0;
+    for i in 0..10000 {
+        sum += client.add(
+            72,
+            2,
+        ).await?;
+    }
+
+    let end = time::now();
+    println!("done! duration:{:?} ms", (end - start).num_milliseconds());
+
+    println!("final result {}", sum);
     println!("Test pass, It's time to cheer!");
 
     Ok(())
