@@ -76,10 +76,9 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
         ).await?;
     }
 
-    let end = time::now();
     // println!("done! duration:{:?} ms", (end - start).num_milliseconds());
 
-    // println!("final result {}", sum);
+    println!("final result {}", sum);
     // println!("Test pass, It's time to cheer!");
 
     Ok(())
