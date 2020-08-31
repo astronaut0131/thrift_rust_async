@@ -15,8 +15,6 @@ pub fn run() -> thrift::Result<()>{
     let service = "part";
     let listen_address = format!("127.0.0.1:{}", port);
 
-    println!("binding to {}", listen_address);
-
     let r_transport_factory = TFramedReadTransportFactory::new();
     let w_transport_factory = TFramedWriteTransportFactory::new();
 

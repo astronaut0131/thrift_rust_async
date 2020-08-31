@@ -1,17 +1,17 @@
 /// print time result in md table
-pub fn print_result(mode: String, call_num: i32, time_in_ms: i64) -> String {
+pub fn format_result(mode: String, call_num: i32, time_in_ms: i64) -> String {
     format!("###{}
 |  total time | time per call |
-|  ----  | ---- |
-| {} ms| {} us|", mode, time_in_ms, (time_in_ms as f64 / call_num as f64) * 1000 as f64)
+|  ---------  | ------------- |
+|  {} ms  |  {} us  |", mode, time_in_ms, (time_in_ms as f64 / call_num as f64) * 1000 as f64)
 }
 
 /// print config result in md table
-pub fn print_config(thread_num: i32, loop_num: i32) -> String {
+pub fn format_config(thread_num: i32, loop_num: i32) -> String {
     format!("###config
 |  thread num   | loop num  | total call |
 |  -----------  | --------  | ---------- |
-|    {}     |   {}    |    {}    |",
+|      {}      |    {}    |    {}    |",
              format_i32(thread_num), format_i32(loop_num), format_i32(thread_num * loop_num))
 }
 

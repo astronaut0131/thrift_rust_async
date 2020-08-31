@@ -65,15 +65,13 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
     /// Return `Err` when the server cannot bind to `listen_address` or there
     /// is an unrecoverable error.
     pub async fn listen<A: ToSocketAddrs>(&mut self, listen_address: A) -> crate::Result<()> {
-        println!("into listen");
         let listener = TcpListener::bind(listen_address).await?;
 
         let mut incoming = listener.incoming();
-        println!("begin listening to:");
         while let Some(stream) = incoming.next().await {
             // stream is a new tcp connection stream
             let stream = stream?;
-            println!("Accepting from: {}", stream.peer_addr()?);
+            // println!("Accepting from: {}", stream.peer_addr()?);
             // new tcp reader thread
 
             let (read_protocol, write_protocol) = self.new_protocols_for_connection(stream).await?;
