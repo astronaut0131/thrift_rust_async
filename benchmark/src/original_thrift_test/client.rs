@@ -14,15 +14,12 @@ use thrift::transport::{TIoChannel, TTcpChannel};
 use crate::original_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 use std::thread;
 
-pub fn run() -> thrift::Result<()> {
+pub fn run(loop_num : i32) -> thrift::Result<()> {
     //
     // build client
     //
 
-    println!("connect to server on 127.0.0.1:9090");
-
-    // time
-    let start = time::now();
+    // println!("connect to server on 127.0.0.1:9090");
 
     let mut c = TTcpChannel::new();
     c.open("127.0.0.1:9090")?;
@@ -38,18 +35,17 @@ pub fn run() -> thrift::Result<()> {
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
     let mut sum = 0;
-    for i in 0..10000 {
+    for i in 0..loop_num {
         sum += client.add(
             72,
             2,
         )?;
     }
 
-    let end = time::now();
-    println!("done! duration:{:?} ms", (end - start).num_milliseconds());
 
-    println!("final result {}", sum);
-    println!("Test pass, It's time to cheer!");
+    //
+    // println!("final result {}", sum);
+    // println!("Test pass, It's time to cheer!");
 
     // done!
     Ok(())

@@ -50,9 +50,9 @@ pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
 }
 
 // test client
-pub async fn run_client(addr: impl ToSocketAddrs) -> async_thrift::Result<()> {
+pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<()> {
     // time
-    let start = time::now();
+    // let start = time::now();
 
     let stream = TcpStream::connect(addr).await?;
     let mut c = TAsyncTcpChannel::with_stream(stream);
@@ -69,7 +69,7 @@ pub async fn run_client(addr: impl ToSocketAddrs) -> async_thrift::Result<()> {
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
 
     let mut sum = 0;
-    for i in 0..10000 {
+    for i in 0..loop_num {
         sum += client.add(
             72,
             2,
@@ -77,10 +77,10 @@ pub async fn run_client(addr: impl ToSocketAddrs) -> async_thrift::Result<()> {
     }
 
     let end = time::now();
-    println!("done! duration:{:?} ms", (end - start).num_milliseconds());
+    // println!("done! duration:{:?} ms", (end - start).num_milliseconds());
 
-    println!("final result {}", sum);
-    println!("Test pass, It's time to cheer!");
+    // println!("final result {}", sum);
+    // println!("Test pass, It's time to cheer!");
 
     Ok(())
 }
