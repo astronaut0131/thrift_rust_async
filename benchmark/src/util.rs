@@ -38,3 +38,23 @@ fn format_i32(mut i: i32) -> String {
 
     res
 }
+
+/// print welcome message
+pub fn print_welcome(){
+    println!("******************************************");
+    println!("*        E-01 benchmark for rust rpc     *");
+    println!("*             Version : 0.1.0            *");
+    println!("******************************************");
+    println!("---------------------------   Benchmark Start! --------------------------");
+}
+
+/// print benchmark result
+pub fn print_result(output: &Vec<String>){
+    println!();
+    println!();
+    println!("---------------------------   Benchmark Finished! --------------------------");
+    for line in output {
+        println!();
+        println!("{}", line);
+    }
+}

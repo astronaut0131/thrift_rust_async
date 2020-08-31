@@ -79,35 +79,15 @@ async fn run_async_both(output: &mut Vec<String>) {
     println!("async finished!");
 }
 
-// print welcome
-fn print_welcome(){
-    println!("******************************************");
-    println!("*        E-01 benchmark for rust rpc     *");
-    println!("*             Version : 0.1.0            *");
-    println!("******************************************");
-    println!("---------------------------   Benchmark Start! --------------------------");
-}
-
-// print all the result
-fn print_result(output: &Vec<String>){
-    println!();
-    println!();
-    println!("---------------------------   Benchmark Finished! --------------------------");
-    for line in output {
-        println!();
-        println!("{}", line);
-    }
-}
-
 fn main() {
     let mut output = vec![String::new(), String::new(), String::new()];
 
-    print_welcome();
+    util::print_welcome();
 
     task::block_on(run_async_both(&mut output));
     thread::sleep(Duration::from_secs(2));
     run_sync_both(&mut output);
 
-    print_result(&output);
+    util::print_result(&output);
 }
 
