@@ -1,26 +1,27 @@
-// async
+// async use
 use async_thrift::server;
 use async_std::task;
 use async_std::io::Error;
-
 mod async_thrift_test;
-
 use futures::future::*;
-
-// sync
+// sync use
 mod original_thrift_test;
 use std::thread;
+// util
+mod util;
 
-
-const THREAD_NUM: i32 = 1000;
+/// config parameter
+// number of clients
+const THREAD_NUM: i32 = 100;
+// number of calls for each client
 const LOOP_NUM: i32 = 1000;
-
 // change the mode of bench
-const SYNC_MODE: bool = true;
+const SYNC_MODE: bool = false;
 
 fn run_sync_both() {
-    thread::spawn(|| original_thrift_test::server::run());
+    util::print_config(THREAD_NUM, LOOP_NUM);
 
+    thread::spawn(|| original_thrift_test::server::run());
     // time
     let start = time::now();
 
@@ -35,10 +36,13 @@ fn run_sync_both() {
     }
 
     let end = time::now();
-    println!("sync mode done! duration:{:?} ms", (end - start).num_milliseconds());
+
+    util::print_result(String::from("sync"), THREAD_NUM * LOOP_NUM, (end - start).num_milliseconds());
 }
 
 async fn run_async_both() {
+    util::print_config(THREAD_NUM, LOOP_NUM);
+
     async_std::task::spawn(async_thrift_test::server::run_server("127.0.0.1:9090"));
     // time
     let start = time::now();
@@ -54,7 +58,7 @@ async fn run_async_both() {
 
     let end = time::now();
     //
-    println!("async mode done! duration:{:?} ms", (end - start).num_milliseconds());
+    util::print_result(String::from("async"), THREAD_NUM * LOOP_NUM, (end - start).num_milliseconds());
 }
 
 fn main() {
@@ -64,3 +68,4 @@ fn main() {
         run_sync_both();
     }
 }
+

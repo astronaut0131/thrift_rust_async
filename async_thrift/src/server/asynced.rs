@@ -87,6 +87,8 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
         }))
     }
 
+    /// build io channel for connection
+    /// return input channel and output channel
     async fn new_protocols_for_connection(
         &mut self,
         stream: TcpStream,
@@ -111,7 +113,7 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
 }
 
 
-// real use one
+/// handle one connection using processor
 async fn handle_incoming_connection_server<PRC>(
     processor: Arc<PRC>,
     i_prot: Box<dyn TAsyncInputProtocol + Send>,
