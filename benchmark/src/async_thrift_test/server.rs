@@ -6,11 +6,12 @@ use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAs
 use async_std::net::ToSocketAddrs;
 use async_trait::async_trait;
 use crate::async_thrift_test::with_struct::{CalculatorSyncProcessor, CalculatorSyncHandler, Input, Output};
+use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransportFactory, TAsyncBufferedWriteTransport, TAsyncBufferedWriteTransportFactory};
 
 pub async fn run_server(addr: impl ToSocketAddrs) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
-    let r_trans_factory = TAsyncFramedReadTransportFactory::new();
-    let w_trans_factory = TAsyncFramedWriteTransportFactory::new();
+    let r_trans_factory = TAsyncBufferedReadTransportFactory::new();
+    let w_trans_factory = TAsyncBufferedWriteTransportFactory::new();
     let i_proto_factory = TAsyncBinaryInputProtocolFactory::new();
     let o_proto_factory = TAsyncBinaryOutputProtocolFactory::new();
     let mut s = server::asynced::TAsyncServer::new(r_trans_factory, i_proto_factory, w_trans_factory, o_proto_factory, processor);

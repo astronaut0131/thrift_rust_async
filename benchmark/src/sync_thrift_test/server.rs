@@ -3,20 +3,17 @@ use thrift::protocol::{
     TCompactOutputProtocolFactory, TInputProtocolFactory, TOutputProtocolFactory,
 };
 use thrift::server::TServer;
-use thrift::transport::{
-    TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory,
-    TWriteTransportFactory,
-};
+use thrift::transport::{TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory, TWriteTransportFactory, TBufferedReadTransportFactory, TBufferedWriteTransportFactory};
 use crate::sync_thrift_test::with_struct::{CalculatorSyncHandler, Input, Output, CalculatorSyncProcessor};
 
 pub fn run(addr: &str) -> thrift::Result<()> {
     let port = 9090;
-    let protocol = "compact";
+    let protocol = "binary";
     let service = "part";
     let listen_address = addr;
 
-    let r_transport_factory = TFramedReadTransportFactory::new();
-    let w_transport_factory = TFramedWriteTransportFactory::new();
+    let r_transport_factory = TBufferedReadTransportFactory::new();
+    let w_transport_factory = TBufferedWriteTransportFactory::new();
 
     let (i_protocol_factory, o_protocol_factory): (
         Box<TInputProtocolFactory>,

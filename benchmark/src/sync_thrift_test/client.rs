@@ -14,6 +14,8 @@ use thrift::transport::{TIoChannel, TTcpChannel};
 use std::thread;
 use crate::sync_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
 use std::net::TcpStream;
+use self::thrift::transport::{TBufferedReadTransportFactory, TBufferedReadTransport, TBufferedWriteTransport};
+use self::thrift::protocol::{TBinaryInputProtocol, TBinaryOutputProtocol};
 
 pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     //
@@ -28,11 +30,11 @@ pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)>
 
     let (i_chan, o_chan) = channel.split()?;
 
-    let i_prot = TCompactInputProtocol::new(
-        TFramedReadTransport::new(i_chan)
+    let i_prot = TBinaryInputProtocol::new(
+        TBufferedReadTransport::new(i_chan), true
     );
-    let o_prot = TCompactOutputProtocol::new(
-        TFramedWriteTransport::new(o_chan)
+    let o_prot = TBinaryOutputProtocol::new(
+        TBufferedWriteTransport::new(o_chan), true
     );
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);

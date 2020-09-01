@@ -33,7 +33,7 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 50;
+const THREAD_NUM: i32 = 500;
 // number of calls for each client
 const LOOP_NUM: i32 = 1000;
 
