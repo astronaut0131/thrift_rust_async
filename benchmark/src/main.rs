@@ -37,9 +37,13 @@ const THREAD_NUM: i32 = 50;
 // number of calls for each client
 const LOOP_NUM: i32 = 1000;
 
+// whether to run component
 const RUN_CLIENT: bool = true;
 const RUN_SERVER: bool = true;
+const RUN_SYNC: bool = true;
+const RUN_ASYNC: bool = true;
 
+// addr to connect
 const ADDR: &str = "127.0.0.1:9090";
 
 // run sync server and client
@@ -54,7 +58,7 @@ fn run_sync_both(output: &mut Vec<String>) {
         // we need to wait the server to run
         thread::sleep(Duration::from_secs(2));
 
-        if !RUN_CLIENT{
+        if !RUN_CLIENT {
             println!("server is online");
             server.join();
 
@@ -103,7 +107,7 @@ async fn run_async_both(output: &mut Vec<String>) {
     let mut server = None;
     if RUN_SERVER {
         server = Some(async_std::task::spawn(async_thrift_test::server::run_server(ADDR)));
-        if !RUN_CLIENT{
+        if !RUN_CLIENT {
             println!("server is online");
             server.unwrap().await;
 
@@ -160,9 +164,13 @@ fn main() {
     util::print_welcome();
 
     // async part
-    task::block_on(run_async_both(&mut output));
+    if RUN_ASYNC {
+        task::block_on(run_async_both(&mut output));
+    }
     // sync part
-    run_sync_both(&mut output);
+    if RUN_SYNC {
+        run_sync_both(&mut output);
+    }
 
     util::print_result(&output);
 }
