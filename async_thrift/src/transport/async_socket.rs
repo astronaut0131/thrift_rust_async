@@ -22,6 +22,7 @@ impl TAsyncTcpChannel {
         }
     }
 
+    /// close a tcp channel
     pub fn close(&mut self){
         use futures::AsyncWriteExt;
         if let Some(ref mut s) = self.stream {

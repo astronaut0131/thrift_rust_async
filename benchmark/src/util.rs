@@ -3,13 +3,15 @@ use std::borrow::Borrow;
 /// print time result in md table
 pub fn format_result(mode: String, call_num: i64, total_time_in_ms: i64,
                      avg_time: i64, per_50_time: i64, per_90_time: i64,
-                     per_95_time: i64, per_99_time: i64) -> String {
+                     per_95_time: i64, per_99_time: i64,
+                     per_999_time: i64, max_time : i64) -> String {
     println!("time : {}", total_time_in_ms);
     format!("###{}
-|  total time |   query per second  |  avg time   |  per 50 time |  per 90 time |  per 95 time |  per 99 time |
-|  ---------  |   ----------------  | ----------  | ------------ | ------------ | ------------ | ------------ |
-|    {} ms  |        {}        |    {} us   |    {} us   |    {} us   |   {} us   |  {} us  |"
-            , mode, total_time_in_ms, (1000 * call_num / total_time_in_ms), avg_time / 1000, per_50_time / 1000, per_90_time / 1000, per_95_time / 1000, per_99_time / 1000)
+|  total time |   query per second  |  avg time   |  per 50 time |  per 90 time |  per 95 time |  per 99 time | per 99.9 time | max time |
+|  ---------  |   ----------------  | ----------  | ------------ | ------------ | ------------ | ------------ | ----------- |  -------- |
+|    {} ms  |        {}        |    {} us   |    {} us   |     {} us    |    {} us    |   {} us   |   {}  us  |   {}  us  |"
+            , mode, total_time_in_ms, (1000 * call_num / total_time_in_ms), avg_time / 1000, per_50_time / 1000,
+            per_90_time / 1000, per_95_time / 1000, per_99_time / 1000, per_999_time / 1000, max_time / 1000)
 }
 
 /// print config result in md table
@@ -88,9 +90,12 @@ pub fn handle_time(time_arrays: Vec<Box<Vec<i64>>>) -> Box<Vec<i64>> {
     res.push(times[(times.len() / 10) * 9]);
     // per 95
     res.push(times[(times.len() / 100) * 95]);
-    // per 90
+    // per 99
     res.push(times[(times.len() / 100) * 99]);
-
+    // per 99.9
+    res.push(times[(times.len() / 1000) * 999]);
+    // max time
+    res.push(times[times.len() - 1]);
 
     return Box::new(res);
 }
