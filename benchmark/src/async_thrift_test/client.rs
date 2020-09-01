@@ -52,9 +52,12 @@ pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
 }
 
 // test client
-pub async fn run_client(stream: TcpStream, addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
+pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
+
+    let mut stream = TcpStream::connect(addr).await?;
+
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
     let (i_chan, o_chan) = c.split().unwrap();

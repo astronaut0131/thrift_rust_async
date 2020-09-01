@@ -33,14 +33,14 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 512;
+const THREAD_NUM: i32 = 128;
 // number of calls for each client
-const LOOP_NUM: i32 = 1000;
+const LOOP_NUM: i32 = 5000;
 
 // whether to run component
 const RUN_CLIENT: bool = true;
 const RUN_SERVER: bool = true;
-const RUN_SYNC: bool = false;
+const RUN_SYNC: bool = true;
 const RUN_ASYNC: bool = true;
 
 // addr to connect
@@ -105,6 +105,10 @@ fn run_sync_both(output: &mut Vec<String>) {
 // run async server and client
 async fn run_async_both(output: &mut Vec<String>) {
     println!("begin async benchmark...");
+
+    // print config
+    output[CONFIG_LOCATION] = util::format_config(THREAD_NUM, LOOP_NUM);
+
     let mut server = None;
     if RUN_SERVER {
         server = Some(async_std::task::spawn(async_thrift_test::server::run_server(ADDR)));
@@ -119,18 +123,14 @@ async fn run_async_both(output: &mut Vec<String>) {
     if RUN_CLIENT {
         // time
         let mut list = Vec::new();
-        for i in 0..THREAD_NUM {
-            // to ensure tcp sync queue is enough
-            let mut stream = TcpStream::connect(ADDR).await.unwrap();
+        let start = time::now();
 
+        for _ in 0..THREAD_NUM {
             // build client
-            list.push(async_std::task::spawn(async_thrift_test::client::run_client(stream, ADDR, LOOP_NUM)));
+            list.push(async_std::task::spawn(async_thrift_test::client::run_client( ADDR, LOOP_NUM)));
         }
 
         // time clock start here
-        let start = time::now();
-
-        //
         let raw_time_result = join_all(list).await;
 
         // time clock end here;
