@@ -37,46 +37,62 @@ const THREAD_NUM: i32 = 50;
 // number of calls for each client
 const LOOP_NUM: i32 = 1000;
 
+const RUN_CLIENT: bool = true;
+const RUN_SERVER: bool = true;
+
+const ADDR: &str = "127.0.0.1:9090";
+
 // run sync server and client
 fn run_sync_both(output: &mut Vec<String>) {
     println!("begin sync benchmark...");
 
-    // print config
-    output[CONFIG_LOCATION] = util::format_config(THREAD_NUM, LOOP_NUM);
-    // start server
-    thread::spawn(|| original_thrift_test::server::run());
-    // we need to wait the server to run
-    thread::sleep(Duration::from_secs(2));
+    if RUN_SERVER {
+        // print config
+        output[CONFIG_LOCATION] = util::format_config(THREAD_NUM, LOOP_NUM);
+        // start server
+        let server = thread::spawn(|| original_thrift_test::server::run(&ADDR));
+        // we need to wait the server to run
+        thread::sleep(Duration::from_secs(2));
 
-    // time clock start here
-    let start = time::now();
+        if !RUN_CLIENT{
+            println!("server is online");
+            server.join();
 
-    // build client thread
-    let mut list = Vec::new();
-    for i in 0..THREAD_NUM {
-        // to ensure tcp sync queue is enough
-        let mut stream = std::net::TcpStream::connect("127.0.0.1:9090").unwrap();
-        // build client
-        list.push(thread::spawn(|| original_thrift_test::client::run(stream, LOOP_NUM)));
+            return;
+        }
     }
 
-    // to collect time result from client
-    let mut res = Vec::new();
-    for task in list {
-        res.push(task.join().unwrap().unwrap());
+    if RUN_CLIENT {
+        // time clock start here
+        let start = time::now();
+
+        // build client thread
+        let mut list = Vec::new();
+        for i in 0..THREAD_NUM {
+            // to ensure tcp sync queue is enough
+            let mut stream = std::net::TcpStream::connect(ADDR).unwrap();
+            // build client
+            list.push(thread::spawn(|| original_thrift_test::client::run(stream, LOOP_NUM)));
+        }
+
+        // to collect time result from client
+        let mut res = Vec::new();
+        for task in list {
+            res.push(task.join().unwrap().unwrap());
+        }
+
+        // time clock end here;
+        let end = time::now();
+
+        // handle raw time result to statistic
+        let time_statistic = handle_time(res);
+        output[SYNC_LOCATION] = util::format_result(String::from("sync"), (THREAD_NUM * LOOP_NUM) as i64,
+                                                    (end - start).num_milliseconds(),
+                                                    time_statistic[0], time_statistic[1],
+                                                    time_statistic[2], time_statistic[3],
+                                                    time_statistic[4], time_statistic[5],
+                                                    time_statistic[6]);
     }
-
-    // time clock end here;
-    let end = time::now();
-
-    // handle raw time result to statistic
-    let time_statistic = handle_time(res);
-    output[SYNC_LOCATION] = util::format_result(String::from("sync"), (THREAD_NUM * LOOP_NUM) as i64,
-                                                (end - start).num_milliseconds(),
-                                                time_statistic[0], time_statistic[1],
-                                                time_statistic[2], time_statistic[3],
-                                                time_statistic[4], time_statistic[5],
-                                                time_statistic[6]);
 
     println!("sync finished!");
 }
@@ -84,42 +100,56 @@ fn run_sync_both(output: &mut Vec<String>) {
 // run async server and client
 async fn run_async_both(output: &mut Vec<String>) {
     println!("begin async benchmark...");
-    let server = async_std::task::spawn(async_thrift_test::server::run_server("127.0.0.1:9090"));
+    let mut server = None;
+    if RUN_SERVER {
+        server = Some(async_std::task::spawn(async_thrift_test::server::run_server(ADDR)));
+        if !RUN_CLIENT{
+            println!("server is online");
+            server.unwrap().await;
 
-    // time
-    let mut list = Vec::new();
-    for i in 0..THREAD_NUM {
-        // to ensure tcp sync queue is enough
-        let mut stream = TcpStream::connect("127.0.0.1:9090").await.unwrap();
-
-        // build client
-        list.push(async_std::task::spawn(async_thrift_test::client::run_client(stream, "127.0.0.1:9090", LOOP_NUM)));
+            return;
+        }
     }
 
-    // time clock start here
-    let start = time::now();
+    if RUN_CLIENT {
+        // time
+        let mut list = Vec::new();
+        for i in 0..THREAD_NUM {
+            // to ensure tcp sync queue is enough
+            let mut stream = TcpStream::connect(ADDR).await.unwrap();
 
-    //
-    let raw_time_result = join_all(list).await;
+            // build client
+            list.push(async_std::task::spawn(async_thrift_test::client::run_client(stream, ADDR, LOOP_NUM)));
+        }
 
-    // time clock end here;
-    let end = time::now();
+        // time clock start here
+        let start = time::now();
 
-    // to collect time result from client
-    let mut res = Vec::new();
-    for task in raw_time_result {
-        res.push(task.unwrap());
+        //
+        let raw_time_result = join_all(list).await;
+
+        // time clock end here;
+        let end = time::now();
+
+        // to collect time result from client
+        let mut res = Vec::new();
+        for task in raw_time_result {
+            res.push(task.unwrap());
+        }
+
+        // handle raw time result to statistic
+        let time_statistic = handle_time(res);
+        output[ASYNC_LOCATION] = util::format_result(String::from("async"), (THREAD_NUM * LOOP_NUM) as i64,
+                                                     (end - start).num_milliseconds(),
+                                                     time_statistic[0], time_statistic[1],
+                                                     time_statistic[2], time_statistic[3],
+                                                     time_statistic[4], time_statistic[5],
+                                                     time_statistic[6]);
     }
 
-    // handle raw time result to statistic
-    let time_statistic = handle_time(res);
-    server.cancel().await;
-    output[ASYNC_LOCATION] = util::format_result(String::from("async"), (THREAD_NUM * LOOP_NUM) as i64,
-                                                 (end - start).num_milliseconds(),
-                                                 time_statistic[0], time_statistic[1],
-                                                 time_statistic[2], time_statistic[3],
-                                                 time_statistic[4], time_statistic[5],
-                                                 time_statistic[6]);
+    if RUN_SERVER {
+        server.unwrap().cancel().await;
+    }
 
     println!("async finished!");
 }

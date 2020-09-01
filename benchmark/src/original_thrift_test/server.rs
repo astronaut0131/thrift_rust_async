@@ -9,11 +9,11 @@ use thrift::transport::{
 };
 use crate::original_thrift_test::with_struct::{CalculatorSyncHandler, Input, Output, CalculatorSyncProcessor};
 
-pub fn run() -> thrift::Result<()> {
+pub fn run(addr: &str) -> thrift::Result<()> {
     let port = 9090;
     let protocol = "compact";
     let service = "part";
-    let listen_address = format!("127.0.0.1:{}", port);
+    let listen_address = addr;
 
     let r_transport_factory = TFramedReadTransportFactory::new();
     let w_transport_factory = TFramedWriteTransportFactory::new();
@@ -45,7 +45,7 @@ pub fn run() -> thrift::Result<()> {
         1,
     );
 
-    server.listen(listen_address.as_str())
+    server.listen(listen_address)
 }
 
 struct PartHandler;
