@@ -26,7 +26,7 @@
 * 实现通过配置的方式独立或同时运行server和client，独立或同时测试sync和async
 
 # 使用方法
-直接运行cargo run即可在本地测试async和sync版本rpc的性能，如果需要client与service单独运行，请看参数配置章节
+直接运行benchmark.sh即可在本地测试async和sync版本rpc的性能，如果需要client与service单独运行，请看参数配置章节
 
 
 # 参数配置

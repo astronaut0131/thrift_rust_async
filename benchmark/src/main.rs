@@ -33,14 +33,14 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 500;
+const THREAD_NUM: i32 = 512;
 // number of calls for each client
 const LOOP_NUM: i32 = 1000;
 
 // whether to run component
 const RUN_CLIENT: bool = true;
 const RUN_SERVER: bool = true;
-const RUN_SYNC: bool = true;
+const RUN_SYNC: bool = false;
 const RUN_ASYNC: bool = true;
 
 // addr to connect
