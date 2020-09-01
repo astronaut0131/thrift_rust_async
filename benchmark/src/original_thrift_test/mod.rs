@@ -1,3 +1,3 @@
 pub mod server;
-mod tutorial;
+mod with_struct;
 pub mod client;

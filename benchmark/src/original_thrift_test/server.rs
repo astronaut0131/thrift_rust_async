@@ -7,9 +7,9 @@ use thrift::transport::{
     TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory,
     TWriteTransportFactory,
 };
-use crate::original_thrift_test::tutorial::{CalculatorSyncProcessor, CalculatorSyncHandler};
+use crate::original_thrift_test::with_struct::{CalculatorSyncHandler, Input, Output, CalculatorSyncProcessor};
 
-pub fn run() -> thrift::Result<()>{
+pub fn run() -> thrift::Result<()> {
     let port = 9090;
     let protocol = "compact";
     let service = "part";
@@ -51,8 +51,7 @@ pub fn run() -> thrift::Result<()>{
 struct PartHandler;
 
 impl CalculatorSyncHandler for PartHandler {
-
-    fn handle_add(&self, num1: i32, num2: i32) -> thrift::Result<i32> {
-        thrift::Result::Ok(num1 + num2)
+    fn handle_add(&self, param: Input) -> thrift::Result<Output> {
+        thrift::Result::Ok(Output { res: Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
     }
 }

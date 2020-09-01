@@ -17,10 +17,10 @@ use async_thrift::transport::{AsyncWrite, TAsyncIoChannel};
 use async_thrift::protocol::{TFieldIdentifier, TType};
 use async_thrift::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
 use async_thrift::protocol::TAsyncOutputProtocol;
-use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 use time::Duration;
 use futures::AsyncWriteExt;
+use crate::async_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
 
 
 // test transport
@@ -75,10 +75,15 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
     let mut sum = 0;
     for i in 0..loop_num {
         let before = time::now();
-        sum += client.add(
-            72,
-            2,
+
+        let r = client.add(
+            Input{
+                num1: Some(1),
+                num2: Some(2),
+                comment: None
+            }
         ).await?;
+        sum += r.res.unwrap();
         let end = time::now();
         time_array.push((end - before).num_nanoseconds().unwrap());
     }

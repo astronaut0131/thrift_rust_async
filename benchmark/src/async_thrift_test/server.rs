@@ -1,11 +1,11 @@
 use async_thrift::server;
 use async_std::task;
 use async_std::io::Error;
-use crate::async_thrift_test::tutorial::{CalculatorSyncProcessor, CalculatorSyncHandler};
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
 use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
 use async_std::net::ToSocketAddrs;
 use async_trait::async_trait;
+use crate::async_thrift_test::with_struct::{CalculatorSyncProcessor, CalculatorSyncHandler, Input, Output};
 
 pub async fn run_server(addr: impl ToSocketAddrs) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
@@ -22,7 +22,7 @@ struct PartHandler;
 
 #[async_trait]
 impl CalculatorSyncHandler for PartHandler {
-    async fn handle_add(&self, num1: i32, num2: i32) -> async_thrift::Result<i32> {
-        Ok(num1 + num2)
+    async fn handle_add(&self, param: Input) -> async_thrift::Result<Output> {
+        Ok(Output {res:Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
     }
 }

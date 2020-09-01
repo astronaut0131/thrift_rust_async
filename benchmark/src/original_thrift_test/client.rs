@@ -11,8 +11,8 @@ use thrift::protocol::{TInputProtocol, TOutputProtocol};
 use thrift::transport::{TFramedReadTransport, TFramedWriteTransport};
 use thrift::transport::{TIoChannel, TTcpChannel};
 
-use crate::original_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 use std::thread;
+use crate::original_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
 
 pub fn run(loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     //
@@ -39,10 +39,11 @@ pub fn run(loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     let mut sum = 0;
     for i in 0..loop_num {
         let before = time::now();
-        sum += client.add(
-            72,
-            2,
-        )?;
+        sum += client.add( Input{
+            num1: Some(72),
+            num2: Some(2),
+            comment: None
+        })?.res.unwrap();
         let end = time::now();
         time_array.push((end - before).num_nanoseconds().unwrap());
     }
@@ -52,6 +53,6 @@ pub fn run(loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     // println!("Test pass, It's time to cheer!");
 
     // done!
-    println!("finish client");
+    // println!("finish client");
     Ok((Box::new(time_array)))
 }

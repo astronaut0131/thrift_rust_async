@@ -117,7 +117,7 @@ fn main() {
     // async part
     task::block_on(run_async_both(&mut output));
     // sync part
-    // run_sync_both(&mut output);
+    run_sync_both(&mut output);
 
     util::print_result(&output);
 }
