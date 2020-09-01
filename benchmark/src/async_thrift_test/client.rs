@@ -20,7 +20,9 @@ use async_thrift::protocol::TAsyncOutputProtocol;
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 use time::Duration;
 use futures::AsyncWriteExt;
-use crate::async_thrift_test::with_struct::{Material, Operator, Number, CalculatorServiceSyncClient, TCalculatorServiceSyncClient,type_a,type_b};
+use crate::async_thrift_test::with_list_map::{ListMapTestSyncClient,TListMapTestSyncClient};
+use std::collections::BTreeMap;
+use crate::THREAD_NUM;
 
 
 // test transport
@@ -70,33 +72,26 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
         TAsyncFramedWriteTransport::new(o_chan), true,
     );
 
-    let mut client = CalculatorServiceSyncClient::new(i_prot, o_prot);
+    let mut client = ListMapTestSyncClient::new(i_prot, o_prot);
     let mut sum:i64 = 0;
-    for i in 0..loop_num {
+    let mut r = -1;
+    let mut value = -1;
+    for i in 0..THREAD_NUM {
         let before = time::now();
-        let material = Material{
-            num1: Some(Number::B(1)),
-            num2: Some(Number::B(2)),
-            op: Some(Operator::Add)
-        };
-        let r = client.calculate(
-            material
-        ).await?;
-        match r{
-            Number::A(i) => {
-                sum += i as i64;
-            }
-            Number::B(i) => {
-                sum += i
-            }
-        }
+        let vec = vec!{1,2,3};
+        let mut scores = BTreeMap::new();
+        scores.insert(1,100);
+        scores.insert(2,200);
+        r = client.sum_up(vec).await.unwrap();
+        value = client.find_value(scores).await.unwrap();
         let end = time::now();
         time_array.push((end - before).num_nanoseconds().unwrap());
     }
 
     c.close();
 
-
+    println!("sum up result {}",r);
+    println!("map find value {}",value);
     // println!("done! duration:{:?} ms", (end - start).num_milliseconds());
 
     // println!("final result {}", sum);

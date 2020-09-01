@@ -4,11 +4,12 @@ use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TA
 use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
 use async_std::net::ToSocketAddrs;
 use async_trait::async_trait;
-use crate::async_thrift_test::with_struct::{CalculatorServiceSyncProcessor,CalculatorServiceSyncHandler,Number,Material,Operator,Xecption};
+use std::collections::BTreeMap;
+use crate::async_thrift_test::with_list_map::{ListMapTestSyncHandler,ListMapTestSyncProcessor};
 
 
 pub async fn run_server(addr: impl ToSocketAddrs) {
-    let processor = CalculatorServiceSyncProcessor::new(PartHandler {});
+    let processor = ListMapTestSyncProcessor::new(PartHandler {});
     let r_trans_factory = TAsyncFramedReadTransportFactory::new();
     let w_trans_factory = TAsyncFramedWriteTransportFactory::new();
     let i_proto_factory = TAsyncBinaryInputProtocolFactory::new();
@@ -21,37 +22,17 @@ pub async fn run_server(addr: impl ToSocketAddrs) {
 struct PartHandler;
 
 #[async_trait]
-impl CalculatorServiceSyncHandler for PartHandler {
-
-    async fn handle_calculate(&self, input: Material) -> async_thrift::Result<Number> {
-        let a = input.num1.unwrap();
-        let b = input.num2.unwrap();
-        let op = input.op.unwrap();
-        let mut x:i64;
-        let mut y:i64;
-        match a {
-            Number::A(i) => {
-                x = i as i64;
-            }
-            Number::B(i) => {
-                x = i;
-            }
+impl ListMapTestSyncHandler for PartHandler {
+    async fn handle_sum_up(&self, input: Vec<i32>) -> async_thrift::Result<i32> {
+        let mut sum = 0;
+        for i in input {
+            sum += i;
         }
-        match b {
-            Number::A(i) => {
-                y = i as i64;
-            }
-            Number::B(i) => {
-                y = i;
-            }
-        }
-        match op{
-            Operator::Add => {
-                return Ok(Number::B(x+y));
-            }
-            Operator::Divide => {
-                return Ok(Number::B(x/y));
-            }
-        }
+        return Ok(sum);
+    }
+    async fn handle_find_value(&self, input: BTreeMap<i32, i32>) -> async_thrift::Result<i32> {
+        let ret = input.get(&1).unwrap();
+        let x = *ret;
+        return Ok(x);
     }
 }
