@@ -21,6 +21,7 @@ use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyn
 use time::Duration;
 use futures::AsyncWriteExt;
 use crate::async_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
+use thrift::transport::TTcpChannel;
 
 
 // test transport
@@ -51,11 +52,9 @@ pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
 }
 
 // test client
-pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
+pub async fn run_client(stream: TcpStream, addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
-    let mut stream = TcpStream::connect("127.0.0.1:9090").await.unwrap();
-
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
     let (i_chan, o_chan) = c.split().unwrap();

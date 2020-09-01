@@ -13,20 +13,20 @@ use thrift::transport::{TIoChannel, TTcpChannel};
 
 use std::thread;
 use crate::original_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
+use std::net::TcpStream;
 
-pub fn run(loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
+pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     //
     // build client
     //
 
     // println!("connect to server on 127.0.0.1:9090");
 
-    let mut c = TTcpChannel::new();
+    let channel = TTcpChannel::with_stream(stream);
+
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
-    c.open("127.0.0.1:9090")?;
-
-    let (i_chan, o_chan) = c.split()?;
+    let (i_chan, o_chan) = channel.split()?;
 
     let i_prot = TCompactInputProtocol::new(
         TFramedReadTransport::new(i_chan)

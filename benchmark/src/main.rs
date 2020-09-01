@@ -20,6 +20,7 @@ use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocol, TAsyncBina
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransport, TAsyncFramedWriteTransport};
 use crate::async_thrift_test::with_struct::{TCalculatorSyncClient, CalculatorSyncClient};
 use async_thrift::transport::TAsyncIoChannel;
+use thrift::transport::TTcpChannel;
 
 
 // util
@@ -32,9 +33,9 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 100;
+const THREAD_NUM: i32 = 1000;
 // number of calls for each client
-const LOOP_NUM: i32 = 1000;
+const LOOP_NUM: i32 = 100;
 
 // run sync server and client
 fn run_sync_both(output: &mut Vec<String>) {
@@ -53,7 +54,10 @@ fn run_sync_both(output: &mut Vec<String>) {
     // build client thread
     let mut list = Vec::new();
     for i in 0..THREAD_NUM {
-        list.push(thread::spawn(|| original_thrift_test::client::run(LOOP_NUM)));
+        // to ensure tcp sync queue is enough
+        let mut stream = std::net::TcpStream::connect("127.0.0.1:9090").unwrap();
+        // build client
+        list.push(thread::spawn(|| original_thrift_test::client::run(stream, LOOP_NUM)));
     }
 
     // to collect time result from client
@@ -68,10 +72,10 @@ fn run_sync_both(output: &mut Vec<String>) {
     // handle raw time result to statistic
     let time_statistic = handle_time(res);
     output[SYNC_LOCATION] = util::format_result(String::from("sync"), (THREAD_NUM * LOOP_NUM) as i64,
-                                                 (end - start).num_milliseconds(),
-                                                 time_statistic[0], time_statistic[1],
-                                                 time_statistic[2], time_statistic[3],
-                                                 time_statistic[4], time_statistic[5],
+                                                (end - start).num_milliseconds(),
+                                                time_statistic[0], time_statistic[1],
+                                                time_statistic[2], time_statistic[3],
+                                                time_statistic[4], time_statistic[5],
                                                 time_statistic[6]);
 
     println!("sync finished!");
@@ -85,8 +89,11 @@ async fn run_async_both(output: &mut Vec<String>) {
     // time
     let mut list = Vec::new();
     for i in 0..THREAD_NUM {
-        // let mut stream = TcpStream::connect("127.0.0.1:9090").await.unwrap();
-        list.push(async_std::task::spawn(async_thrift_test::client::run_client("127.0.0.1:9090", LOOP_NUM)));
+        // to ensure tcp sync queue is enough
+        let mut stream = TcpStream::connect("127.0.0.1:9090").await.unwrap();
+
+        // build client
+        list.push(async_std::task::spawn(async_thrift_test::client::run_client(stream, "127.0.0.1:9090", LOOP_NUM)));
     }
 
     // time clock start here
@@ -99,7 +106,7 @@ async fn run_async_both(output: &mut Vec<String>) {
 
     // to collect time result from client
     let mut res = Vec::new();
-    for task in raw_time_result{
+    for task in raw_time_result {
         res.push(task.unwrap());
     }
 
