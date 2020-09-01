@@ -8,7 +8,7 @@ mod async_thrift_test;
 use futures::future::*;
 
 // sync use
-mod original_thrift_test;
+mod sync_thrift_test;
 
 use std::thread;
 use std::time::Duration;
@@ -45,6 +45,7 @@ const RUN_ASYNC: bool = true;
 
 // addr to connect
 const ADDR: &str = "127.0.0.1:9090";
+///
 
 // run sync server and client
 fn run_sync_both(output: &mut Vec<String>) {
@@ -54,7 +55,7 @@ fn run_sync_both(output: &mut Vec<String>) {
         // print config
         output[CONFIG_LOCATION] = util::format_config(THREAD_NUM, LOOP_NUM);
         // start server
-        let server = thread::spawn(|| original_thrift_test::server::run(&ADDR));
+        let server = thread::spawn(|| sync_thrift_test::server::run(&ADDR));
         // we need to wait the server to run
         thread::sleep(Duration::from_secs(2));
 
@@ -76,7 +77,7 @@ fn run_sync_both(output: &mut Vec<String>) {
             // to ensure tcp sync queue is enough
             let mut stream = std::net::TcpStream::connect(ADDR).unwrap();
             // build client
-            list.push(thread::spawn(|| original_thrift_test::client::run(stream, LOOP_NUM)));
+            list.push(thread::spawn(|| sync_thrift_test::client::run(stream, LOOP_NUM)));
         }
 
         // to collect time result from client

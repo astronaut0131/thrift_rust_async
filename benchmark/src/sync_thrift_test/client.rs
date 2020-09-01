@@ -12,7 +12,7 @@ use thrift::transport::{TFramedReadTransport, TFramedWriteTransport};
 use thrift::transport::{TIoChannel, TTcpChannel};
 
 use std::thread;
-use crate::original_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
+use crate::sync_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
 use std::net::TcpStream;
 
 pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {

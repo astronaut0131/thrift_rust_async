@@ -65,3 +65,20 @@ rpc连接的地址和端口
 这是因为单独运行服务端时，同时测试两个服务端会互相影响，同时运行是没有意义的
 
 
+# 包说明
+* async_thrift_test
+
+包含了async thrift的测试代码，client为客户端，server为服务端，其他为thrift自动生成的文件
+
+* sync_thrift_test
+
+包含了sync thrift的测试代码，client为客户端，server为服务端，其他为thrift自动生成的文件
+
+* main.rs
+
+benchmark主程序，负责启动client与server的启动，整体测试流程等
+
+* until.rs
+
+包含各种辅助函数，负责时间数据的统计和格式化输出
+

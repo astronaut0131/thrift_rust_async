@@ -7,7 +7,7 @@ use thrift::transport::{
     TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory,
     TWriteTransportFactory,
 };
-use crate::original_thrift_test::with_struct::{CalculatorSyncHandler, Input, Output, CalculatorSyncProcessor};
+use crate::sync_thrift_test::with_struct::{CalculatorSyncHandler, Input, Output, CalculatorSyncProcessor};
 
 pub fn run(addr: &str) -> thrift::Result<()> {
     let port = 9090;
