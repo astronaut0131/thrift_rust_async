@@ -33,9 +33,9 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 1000;
+const THREAD_NUM: i32 = 50;
 // number of calls for each client
-const LOOP_NUM: i32 = 100;
+const LOOP_NUM: i32 = 1000;
 
 // run sync server and client
 fn run_sync_both(output: &mut Vec<String>) {
@@ -98,6 +98,7 @@ async fn run_async_both(output: &mut Vec<String>) {
 
     // time clock start here
     let start = time::now();
+
     //
     let raw_time_result = join_all(list).await;
 
