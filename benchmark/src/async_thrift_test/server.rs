@@ -1,14 +1,14 @@
 use async_thrift::server;
 use async_std::task;
-use async_std::io::Error;
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
 use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
 use async_std::net::ToSocketAddrs;
 use async_trait::async_trait;
-use crate::async_thrift_test::with_struct::{CalculatorSyncProcessor, CalculatorSyncHandler, Input, Output};
+use crate::async_thrift_test::with_struct::{CalculatorServiceSyncProcessor,CalculatorServiceSyncHandler,Number,Material,Operator,Xecption};
+
 
 pub async fn run_server(addr: impl ToSocketAddrs) {
-    let processor = CalculatorSyncProcessor::new(PartHandler {});
+    let processor = CalculatorServiceSyncProcessor::new(PartHandler {});
     let r_trans_factory = TAsyncFramedReadTransportFactory::new();
     let w_trans_factory = TAsyncFramedWriteTransportFactory::new();
     let i_proto_factory = TAsyncBinaryInputProtocolFactory::new();
@@ -21,8 +21,37 @@ pub async fn run_server(addr: impl ToSocketAddrs) {
 struct PartHandler;
 
 #[async_trait]
-impl CalculatorSyncHandler for PartHandler {
-    async fn handle_add(&self, param: Input) -> async_thrift::Result<Output> {
-        Ok(Output {res:Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
+impl CalculatorServiceSyncHandler for PartHandler {
+
+    async fn handle_calculate(&self, input: Material) -> async_thrift::Result<Number> {
+        let a = input.num1.unwrap();
+        let b = input.num2.unwrap();
+        let op = input.op.unwrap();
+        let mut x:i64;
+        let mut y:i64;
+        match a {
+            Number::A(i) => {
+                x = i as i64;
+            }
+            Number::B(i) => {
+                x = i;
+            }
+        }
+        match b {
+            Number::A(i) => {
+                y = i as i64;
+            }
+            Number::B(i) => {
+                y = i;
+            }
+        }
+        match op{
+            Operator::Add => {
+                return Ok(Number::B(x+y));
+            }
+            Operator::Divide => {
+                return Ok(Number::B(x/y));
+            }
+        }
     }
 }

@@ -20,7 +20,7 @@ use async_thrift::protocol::TAsyncOutputProtocol;
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 use time::Duration;
 use futures::AsyncWriteExt;
-use crate::async_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
+use crate::async_thrift_test::with_struct::{Material, Operator, Number, CalculatorServiceSyncClient, TCalculatorServiceSyncClient,type_a,type_b};
 
 
 // test transport
@@ -70,20 +70,26 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
         TAsyncFramedWriteTransport::new(o_chan), true,
     );
 
-    let mut client = CalculatorSyncClient::new(i_prot, o_prot);
-
-    let mut sum = 0;
+    let mut client = CalculatorServiceSyncClient::new(i_prot, o_prot);
+    let mut sum:i64 = 0;
     for i in 0..loop_num {
         let before = time::now();
-
-        let r = client.add(
-            Input{
-                num1: Some(1),
-                num2: Some(2),
-                comment: None
-            }
+        let material = Material{
+            num1: Some(Number::B(1)),
+            num2: Some(Number::B(2)),
+            op: Some(Operator::Add)
+        };
+        let r = client.calculate(
+            material
         ).await?;
-        sum += r.res.unwrap();
+        match r{
+            Number::A(i) => {
+                sum += i as i64;
+            }
+            Number::B(i) => {
+                sum += i
+            }
+        }
         let end = time::now();
         time_array.push((end - before).num_nanoseconds().unwrap());
     }

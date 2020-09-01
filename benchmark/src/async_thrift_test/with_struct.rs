@@ -27,30 +27,151 @@ use async_thrift::protocol::verify_required_field_exists;
 use async_trait::async_trait;
 use self::async_thrift::server::TAsyncProcessor;
 
+#[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum Operator {
+  Divide = 1,
+  Add = 2,
+}
+
+impl Operator {
+  pub async fn write_to_out_protocol(&self, o_prot: &mut dyn TAsyncOutputProtocol) -> async_thrift::Result<()> {
+    o_prot.write_i32(*self as i32).await
+  }
+  pub async fn read_from_in_protocol(i_prot: &mut dyn TAsyncInputProtocol) -> async_thrift::Result<Operator> {
+    let enum_value = i_prot.read_i32().await?;
+    Operator::try_from(enum_value)  }
+}
+
+impl TryFrom<i32> for Operator {
+  type Error = async_thrift::Error;  fn try_from(i: i32) -> Result<Self, Self::Error> {
+    match i {
+      1 => Ok(Operator::Divide),
+      2 => Ok(Operator::Add),
+      _ => {
+        Err(
+          async_thrift::Error::Protocol(
+            ProtocolError::new(
+              ProtocolErrorKind::InvalidData,
+              format!("cannot convert enum constant {} to Operator", i)
+            )
+          )
+        )
+      },
+    }
+  }
+}
+
+pub type type_a = i32;
+
+pub type type_b = i64;
+
 //
-// Input
+// Number
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct Input {
-  pub num1: Option<i32>,
-  pub num2: Option<i32>,
-  pub comment: Option<String>,
+pub enum Number {
+  A(type_a),
+  B(type_b),
 }
 
-impl Input {
-  pub fn new<F1, F2, F3>(num1: F1, num2: F2, comment: F3) -> Input where F1: Into<Option<i32>>, F2: Into<Option<i32>>, F3: Into<Option<String>> {
-    Input {
-      num1: num1.into(),
-      num2: num2.into(),
-      comment: comment.into(),
+impl Number {
+  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Number> {
+    let mut ret: Option<Number> = None;
+    let mut received_field_count = 0;
+    i_prot.read_struct_begin().await?;
+    loop {
+      let field_ident = i_prot.read_field_begin().await?;
+      if field_ident.field_type == TType::Stop {
+        break;
+      }
+      let field_id = field_id(&field_ident)?;
+      match field_id {
+        1 => {
+          let val = i_prot.read_i32().await?;
+          if ret.is_none() {
+            ret = Some(Number::A(val));
+          }
+          received_field_count += 1;
+        },
+        2 => {
+          let val = i_prot.read_i64().await?;
+          if ret.is_none() {
+            ret = Some(Number::B(val));
+          }
+          received_field_count += 1;
+        },
+        _ => {
+          i_prot.skip(field_ident.field_type).await?;
+          received_field_count += 1;
+        },
+      };
+      i_prot.read_field_end().await?;
+    }
+    i_prot.read_struct_end().await?;
+    if received_field_count == 0 {
+      Err(
+        async_thrift::Error::Protocol(
+          ProtocolError::new(
+            ProtocolErrorKind::InvalidData,
+            "received empty union from remote Number"
+          )
+        )
+      )
+    } else if received_field_count > 1 {
+      Err(
+        async_thrift::Error::Protocol(
+          ProtocolError::new(
+            ProtocolErrorKind::InvalidData,
+            "received multiple fields for union from remote Number"
+          )
+        )
+      )
+    } else {
+      Ok(ret.expect("return value should have been constructed"))
     }
   }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Input> {
+  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol+Send)) -> async_thrift::Result<()> {
+    let struct_ident = TStructIdentifier::new("Number");
+    o_prot.write_struct_begin(&struct_ident).await?;
+    match *self {
+      Number::A(f) => {
+        o_prot.write_field_begin(&TFieldIdentifier::new("a", TType::I32, 1)).await?;
+        o_prot.write_i32(f).await?;
+        o_prot.write_field_end().await?;
+      },
+      Number::B(f) => {
+        o_prot.write_field_begin(&TFieldIdentifier::new("b", TType::I64, 2)).await?;
+        o_prot.write_i64(f).await?;
+        o_prot.write_field_end().await?;
+      },
+    }
+    o_prot.write_field_stop().await?;
+    o_prot.write_struct_end().await
+  }
+}
+
+//
+// Xecption
+//
+
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct Xecption {
+  pub error_code: Option<i32>,
+  pub message: Option<String>,
+}
+
+impl Xecption {
+  pub fn new<F1, F2>(error_code: F1, message: F2) -> Xecption where F1: Into<Option<i32>>, F2: Into<Option<String>> {
+    Xecption {
+      error_code: error_code.into(),
+      message: message.into(),
+    }
+  }
+  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xecption> {
     i_prot.read_struct_begin().await?;
     let mut f_1: Option<i32> = Some(0);
-    let mut f_2: Option<i32> = Some(0);
-    let mut f_3: Option<String> = None;
+    let mut f_2: Option<String> = Some("".to_owned());
     loop {
       let field_ident = i_prot.read_field_begin().await?;
       if field_ident.field_type == TType::Stop {
@@ -63,11 +184,114 @@ impl Input {
           f_1 = Some(val);
         },
         2 => {
-          let val = i_prot.read_i32().await?;
+          let val = i_prot.read_string().await?;
+          f_2 = Some(val);
+        },
+        _ => {
+          i_prot.skip(field_ident.field_type).await?;
+        },
+      };
+      i_prot.read_field_end().await?;
+    }
+    i_prot.read_struct_end().await?;
+    let ret = Xecption {
+      error_code: f_1,
+      message: f_2,
+    };
+    Ok(ret)
+  }
+  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+    let struct_ident = TStructIdentifier::new("Xecption");
+    o_prot.write_struct_begin(&struct_ident).await?;
+    if let Some(fld_var) = self.error_code {
+      o_prot.write_field_begin(&TFieldIdentifier::new("errorCode", TType::I32, 1)).await?;
+      o_prot.write_i32(fld_var).await?;
+      o_prot.write_field_end().await?;
+      ()
+    } else {
+      ()
+    }
+    if let Some(ref fld_var) = self.message {
+      o_prot.write_field_begin(&TFieldIdentifier::new("message", TType::String, 2)).await?;
+      o_prot.write_string(fld_var).await?;
+      o_prot.write_field_end().await?;
+      ()
+    } else {
+      ()
+    }
+    o_prot.write_field_stop().await?;
+    o_prot.write_struct_end().await
+  }
+}
+
+impl Default for Xecption {
+  fn default() -> Self {
+    Xecption{
+      error_code: Some(0),
+      message: Some("".to_owned()),
+    }
+  }
+}
+
+impl Error for Xecption {
+  fn description(&self) -> &str {
+    "remote service threw Xecption"
+  }
+}
+
+impl From<Xecption> for async_thrift::Error {
+  fn from(e: Xecption) -> Self {
+    async_thrift::Error::User(Box::new(e))
+  }
+}
+
+impl Display for Xecption {
+  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    self.description().fmt(f)
+  }
+}
+
+//
+// Material
+//
+
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct Material {
+  pub num1: Option<Number>,
+  pub num2: Option<Number>,
+  pub op: Option<Operator>,
+}
+
+impl Material {
+  pub fn new<F1, F2, F3>(num1: F1, num2: F2, op: F3) -> Material where F1: Into<Option<Number>>, F2: Into<Option<Number>>, F3: Into<Option<Operator>> {
+    Material {
+      num1: num1.into(),
+      num2: num2.into(),
+      op: op.into(),
+    }
+  }
+  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Material> {
+    i_prot.read_struct_begin().await?;
+    let mut f_1: Option<Number> = None;
+    let mut f_2: Option<Number> = None;
+    let mut f_3: Option<Operator> = None;
+    loop {
+      let field_ident = i_prot.read_field_begin().await?;
+      if field_ident.field_type == TType::Stop {
+        break;
+      }
+      let field_id = field_id(&field_ident)?;
+      match field_id {
+        1 => {
+          let val = Number::read_from_in_protocol(i_prot).await?;
+          f_1 = Some(val);
+        },
+        2 => {
+          let val = Number::read_from_in_protocol(i_prot).await?;
           f_2 = Some(val);
         },
         3 => {
-          let val = i_prot.read_string().await?;
+          let val = Operator::read_from_in_protocol(i_prot).await?;
           f_3 = Some(val);
         },
         _ => {
@@ -77,35 +301,35 @@ impl Input {
       i_prot.read_field_end().await?;
     }
     i_prot.read_struct_end().await?;
-    let ret = Input {
+    let ret = Material {
       num1: f_1,
       num2: f_2,
-      comment: f_3,
+      op: f_3,
     };
     Ok(ret)
   }
   pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Input");
+    let struct_ident = TStructIdentifier::new("Material");
     o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.num1 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("num1", TType::I32, 1)).await?;
-      o_prot.write_i32(fld_var).await?;
+    if let Some(ref fld_var) = self.num1 {
+      o_prot.write_field_begin(&TFieldIdentifier::new("num1", TType::Struct, 1)).await?;
+      fld_var.write_to_out_protocol(o_prot).await?;
       o_prot.write_field_end().await?;
       ()
     } else {
       ()
     }
-    if let Some(fld_var) = self.num2 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("num2", TType::I32, 2)).await?;
-      o_prot.write_i32(fld_var).await?;
+    if let Some(ref fld_var) = self.num2 {
+      o_prot.write_field_begin(&TFieldIdentifier::new("num2", TType::Struct, 2)).await?;
+      fld_var.write_to_out_protocol(o_prot).await?;
       o_prot.write_field_end().await?;
       ()
     } else {
       ()
     }
-    if let Some(ref fld_var) = self.comment {
-      o_prot.write_field_begin(&TFieldIdentifier::new("comment", TType::String, 3)).await?;
-      o_prot.write_string(fld_var).await?;
+    if let Some(ref fld_var) = self.op {
+      o_prot.write_field_begin(&TFieldIdentifier::new("op", TType::I32, 3)).await?;
+      fld_var.write_to_out_protocol(o_prot).await?;
       o_prot.write_field_end().await?;
       ()
     } else {
@@ -116,138 +340,58 @@ impl Input {
   }
 }
 
-impl Default for Input {
+impl Default for Material {
   fn default() -> Self {
-    Input{
-      num1: Some(0),
-      num2: Some(0),
-      comment: Some("".to_owned()),
+    Material{
+      num1: None,
+      num2: None,
+      op: None,
     }
   }
 }
+
+pub const TEST_CONST: i32 = 5;
 
 //
-// Output
-//
-
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct Output {
-  pub res: Option<i32>,
-  pub comment: Option<String>,
-}
-
-impl Output {
-  pub fn new<F1, F2>(res: F1, comment: F2) -> Output where F1: Into<Option<i32>>, F2: Into<Option<String>> {
-    Output {
-      res: res.into(),
-      comment: comment.into(),
-    }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Output> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = Some(0);
-    let mut f_2: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_string().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    let ret = Output {
-      res: f_1,
-      comment: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Output");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.res {
-      o_prot.write_field_begin(&TFieldIdentifier::new("res", TType::I32, 1)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.comment {
-      o_prot.write_field_begin(&TFieldIdentifier::new("comment", TType::String, 2)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-}
-
-impl Default for Output {
-  fn default() -> Self {
-    Output{
-      res: Some(0),
-      comment: Some("".to_owned()),
-    }
-  }
-}
-
-//
-// Calculator service client
+// CalculatorService service client
 //
 
 #[async_trait]
-pub trait TCalculatorSyncClient {
-  async fn add(&mut self, param: Input) -> async_thrift::Result<Output>;
+pub trait TCalculatorServiceSyncClient {
+  async fn calculate(&mut self, input: Material) -> async_thrift::Result<Number>;
 }
 
-pub trait TCalculatorSyncClientMarker {}
+pub trait TCalculatorServiceSyncClientMarker {}
 
-pub struct CalculatorSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+pub struct CalculatorServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
   _i_prot: IP,
   _o_prot: OP,
   _sequence_number: i32,
 }
 
-impl <IP, OP> CalculatorSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
-  pub fn new(input_protocol: IP, output_protocol: OP) -> CalculatorSyncClient<IP, OP> {
-    CalculatorSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
+impl <IP, OP> CalculatorServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+  pub fn new(input_protocol: IP, output_protocol: OP) -> CalculatorServiceSyncClient<IP, OP> {
+    CalculatorServiceSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
   }
 }
 
-impl <IP, OP> TThriftClient for CalculatorSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+impl <IP, OP> TThriftClient for CalculatorServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
   fn i_prot_mut(&mut self) -> &mut (dyn TAsyncInputProtocol + Send) { &mut self._i_prot }
   fn o_prot_mut(&mut self) -> &mut (dyn TAsyncOutputProtocol + Send) { &mut self._o_prot }
   fn sequence_number(&self) -> i32 { self._sequence_number }
   fn increment_sequence_number(&mut self) -> i32 { self._sequence_number += 1; self._sequence_number }
 }
 
-impl <IP, OP> TCalculatorSyncClientMarker for CalculatorSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
+impl <IP, OP> TCalculatorServiceSyncClientMarker for CalculatorServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
 
 #[async_trait]
-impl <C: TThriftClient + TCalculatorSyncClientMarker+ Send> TCalculatorSyncClient for C {
-  async fn add(&mut self, param: Input) -> async_thrift::Result<Output> {
+impl <C: TThriftClient + TCalculatorServiceSyncClientMarker+ Send> TCalculatorServiceSyncClient for C {
+  async fn calculate(&mut self, input: Material) -> async_thrift::Result<Number> {
     (
       {
         self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("add", TMessageType::Call, self.sequence_number());
-        let call_args = CalculatorAddArgs { param: param };
+        let message_ident = TMessageIdentifier::new("calculate", TMessageType::Call, self.sequence_number());
+        let call_args = CalculatorServiceCalculateArgs { input: input };
         self.o_prot_mut().write_message_begin(&message_ident).await?;
         call_args.write_to_out_protocol(self.o_prot_mut()).await?;
         self.o_prot_mut().write_message_end().await?;
@@ -257,14 +401,14 @@ impl <C: TThriftClient + TCalculatorSyncClientMarker+ Send> TCalculatorSyncClien
     {
       let message_ident = self.i_prot_mut().read_message_begin().await?;
       verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("add", &message_ident.name)?;
+      verify_expected_service_call("calculate", &message_ident.name)?;
       if message_ident.message_type == TMessageType::Exception {
         let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
         self.i_prot_mut().read_message_end().await?;
         return Err(async_thrift::Error::Application(remote_error))
       }
       verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = CalculatorAddResult::read_from_in_protocol(self.i_prot_mut()).await?;
+      let result = CalculatorServiceCalculateResult::read_from_in_protocol(self.i_prot_mut()).await?;
       self.i_prot_mut().read_message_end().await?;
       result.ok_or()
     }
@@ -272,47 +416,70 @@ impl <C: TThriftClient + TCalculatorSyncClientMarker+ Send> TCalculatorSyncClien
 }
 
 //
-// Calculator service processor
+// CalculatorService service processor
 //
 
 #[async_trait]
-pub trait CalculatorSyncHandler {
-  async fn handle_add(&self, param: Input) -> async_thrift::Result<Output>;
+pub trait CalculatorServiceSyncHandler {
+  async fn handle_calculate(&self, input: Material) -> async_thrift::Result<Number>;
 }
 
-pub struct CalculatorSyncProcessor<H: CalculatorSyncHandler> {
+pub struct CalculatorServiceSyncProcessor<H: CalculatorServiceSyncHandler> {
   handler: H,
 }
 
-impl <H: CalculatorSyncHandler> CalculatorSyncProcessor<H> {
-  pub fn new(handler: H) -> CalculatorSyncProcessor<H> {
-    CalculatorSyncProcessor {
+impl <H: CalculatorServiceSyncHandler> CalculatorServiceSyncProcessor<H> {
+  pub fn new(handler: H) -> CalculatorServiceSyncProcessor<H> {
+    CalculatorServiceSyncProcessor {
       handler,
     }
   }
-  async fn process_add(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TCalculatorProcessFunctions::process_add(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+  async fn process_calculate(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+    TCalculatorServiceProcessFunctions::process_calculate(&self.handler, incoming_sequence_number, i_prot, o_prot).await
   }
 }
 
-pub struct TCalculatorProcessFunctions;
+pub struct TCalculatorServiceProcessFunctions;
 
-impl TCalculatorProcessFunctions {
-  pub async fn process_add<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = CalculatorAddArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_add(args.param).await {
+impl TCalculatorServiceProcessFunctions {
+  pub async fn process_calculate<H: CalculatorServiceSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+    let args = CalculatorServiceCalculateArgs::read_from_in_protocol(i_prot).await?;
+    match handler.handle_calculate(args.input).await {
       Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("add", TMessageType::Reply, incoming_sequence_number);
+        let message_ident = TMessageIdentifier::new("calculate", TMessageType::Reply, incoming_sequence_number);
         o_prot.write_message_begin(&message_ident).await?;
-        let ret = CalculatorAddResult { result_value: Some(handler_return) };
+        let ret = CalculatorServiceCalculateResult { result_value: Some(handler_return), err: None };
         ret.write_to_out_protocol(o_prot).await?;
         o_prot.write_message_end().await?;
         o_prot.flush().await
       },
       Err(e) => {
         match e {
+          async_thrift::Error::User(usr_err) => {
+            if usr_err.downcast_ref::<Xecption>().is_some() {
+              let err = usr_err.downcast::<Xecption>().expect("downcast already checked");
+              let ret_err = CalculatorServiceCalculateResult{ result_value: None, err: Some(*err) };
+              let message_ident = TMessageIdentifier::new("calculate", TMessageType::Reply, incoming_sequence_number);
+              o_prot.write_message_begin(&message_ident).await?;
+              ret_err.write_to_out_protocol(o_prot).await?;
+              o_prot.write_message_end().await?;
+              o_prot.flush().await
+            } else {
+              let ret_err = {
+                ApplicationError::new(
+                  ApplicationErrorKind::Unknown,
+                  usr_err.description()
+                )
+              };
+              let message_ident = TMessageIdentifier::new("calculate", TMessageType::Exception, incoming_sequence_number);
+              o_prot.write_message_begin(&message_ident).await?;
+              async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+              o_prot.write_message_end().await?;
+              o_prot.flush().await
+            }
+          },
           async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("add", TMessageType::Exception, incoming_sequence_number);
+            let message_ident = TMessageIdentifier::new("calculate", TMessageType::Exception, incoming_sequence_number);
             o_prot.write_message_begin(&message_ident).await?;
             async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
             o_prot.write_message_end().await?;
@@ -325,7 +492,7 @@ impl TCalculatorProcessFunctions {
                 e.description()
               )
             };
-            let message_ident = TMessageIdentifier::new("add", TMessageType::Exception, incoming_sequence_number);
+            let message_ident = TMessageIdentifier::new("calculate", TMessageType::Exception, incoming_sequence_number);
             o_prot.write_message_begin(&message_ident).await?;
             async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
             o_prot.write_message_end().await?;
@@ -338,12 +505,12 @@ impl TCalculatorProcessFunctions {
 }
 
 #[async_trait]
-impl <H: CalculatorSyncHandler + Send + Sync> TAsyncProcessor for CalculatorSyncProcessor<H> {
+impl <H: CalculatorServiceSyncHandler + Send + Sync> TAsyncProcessor for CalculatorServiceSyncProcessor<H> {
   async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
     let message_ident = i_prot.read_message_begin().await?;
     let res = match &*message_ident.name {
-      "add" => {
-        self.process_add(message_ident.sequence_number, i_prot, o_prot).await
+      "calculate" => {
+        self.process_calculate(message_ident.sequence_number, i_prot, o_prot).await
       },
       method => {
         Err(
@@ -361,18 +528,18 @@ impl <H: CalculatorSyncHandler + Send + Sync> TAsyncProcessor for CalculatorSync
 }
 
 //
-// CalculatorAddArgs
+// CalculatorServiceCalculateArgs
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct CalculatorAddArgs {
-  param: Input,
+struct CalculatorServiceCalculateArgs {
+  input: Material,
 }
 
-impl CalculatorAddArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<CalculatorAddArgs> {
+impl CalculatorServiceCalculateArgs {
+  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<CalculatorServiceCalculateArgs> {
     i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Input> = None;
+    let mut f_1: Option<Material> = None;
     loop {
       let field_ident = i_prot.read_field_begin().await?;
       if field_ident.field_type == TType::Stop {
@@ -381,7 +548,7 @@ impl CalculatorAddArgs {
       let field_id = field_id(&field_ident)?;
       match field_id {
         1 => {
-          let val = Input::read_from_in_protocol(i_prot).await?;
+          let val = Material::read_from_in_protocol(i_prot).await?;
           f_1 = Some(val);
         },
         _ => {
@@ -391,17 +558,17 @@ impl CalculatorAddArgs {
       i_prot.read_field_end().await?;
     }
     i_prot.read_struct_end().await?;
-    verify_required_field_exists("CalculatorAddArgs.param", &f_1)?;
-    let ret = CalculatorAddArgs {
-      param: f_1.expect("auto-generated code should have checked for presence of required fields"),
+    verify_required_field_exists("CalculatorServiceCalculateArgs.input", &f_1)?;
+    let ret = CalculatorServiceCalculateArgs {
+      input: f_1.expect("auto-generated code should have checked for presence of required fields"),
     };
     Ok(ret)
   }
   async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("add_args");
+    let struct_ident = TStructIdentifier::new("calculate_args");
     o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("param", TType::Struct, 1)).await?;
-    self.param.write_to_out_protocol(o_prot).await?;
+    o_prot.write_field_begin(&TFieldIdentifier::new("input", TType::Struct, 1)).await?;
+    self.input.write_to_out_protocol(o_prot).await?;
     o_prot.write_field_end().await?;
     o_prot.write_field_stop().await?;
     o_prot.write_struct_end().await
@@ -409,18 +576,20 @@ impl CalculatorAddArgs {
 }
 
 //
-// CalculatorAddResult
+// CalculatorServiceCalculateResult
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct CalculatorAddResult {
-  result_value: Option<Output>,
+struct CalculatorServiceCalculateResult {
+  result_value: Option<Number>,
+  err: Option<Xecption>,
 }
 
-impl CalculatorAddResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<CalculatorAddResult> {
+impl CalculatorServiceCalculateResult {
+  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<CalculatorServiceCalculateResult> {
     i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Output> = None;
+    let mut f_0: Option<Number> = None;
+    let mut f_1: Option<Xecption> = None;
     loop {
       let field_ident = i_prot.read_field_begin().await?;
       if field_ident.field_type == TType::Stop {
@@ -429,8 +598,12 @@ impl CalculatorAddResult {
       let field_id = field_id(&field_ident)?;
       match field_id {
         0 => {
-          let val = Output::read_from_in_protocol(i_prot).await?;
+          let val = Number::read_from_in_protocol(i_prot).await?;
           f_0 = Some(val);
+        },
+        1 => {
+          let val = Xecption::read_from_in_protocol(i_prot).await?;
+          f_1 = Some(val);
         },
         _ => {
           i_prot.skip(field_ident.field_type).await?;
@@ -439,13 +612,14 @@ impl CalculatorAddResult {
       i_prot.read_field_end().await?;
     }
     i_prot.read_struct_end().await?;
-    let ret = CalculatorAddResult {
+    let ret = CalculatorServiceCalculateResult {
       result_value: f_0,
+      err: f_1,
     };
     Ok(ret)
   }
   async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("CalculatorAddResult");
+    let struct_ident = TStructIdentifier::new("CalculatorServiceCalculateResult");
     o_prot.write_struct_begin(&struct_ident).await?;
     if let Some(ref fld_var) = self.result_value {
       o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
@@ -455,18 +629,28 @@ impl CalculatorAddResult {
     } else {
       ()
     }
+    if let Some(ref fld_var) = self.err {
+      o_prot.write_field_begin(&TFieldIdentifier::new("err", TType::Struct, 1)).await?;
+      fld_var.write_to_out_protocol(o_prot).await?;
+      o_prot.write_field_end().await?;
+      ()
+    } else {
+      ()
+    }
     o_prot.write_field_stop().await?;
     o_prot.write_struct_end().await
   }
-  fn ok_or(self) -> async_thrift::Result<Output> {
-    if self.result_value.is_some() {
+  fn ok_or(self) -> async_thrift::Result<Number> {
+    if self.err.is_some() {
+      Err(async_thrift::Error::User(Box::new(self.err.unwrap())))
+    } else if self.result_value.is_some() {
       Ok(self.result_value.unwrap())
     } else {
       Err(
         async_thrift::Error::Application(
           ApplicationError::new(
             ApplicationErrorKind::MissingResult,
-            "no result received for CalculatorAdd"
+            "no result received for CalculatorServiceCalculate"
           )
         )
       )
