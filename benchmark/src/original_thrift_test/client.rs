@@ -52,5 +52,6 @@ pub fn run(loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     // println!("Test pass, It's time to cheer!");
 
     // done!
+    println!("finish client");
     Ok((Box::new(time_array)))
 }

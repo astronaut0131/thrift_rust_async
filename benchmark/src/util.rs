@@ -82,6 +82,17 @@ pub fn handle_time(time_arrays: Vec<Box<Vec<i64>>>) -> Box<Vec<i64>> {
 
     times.sort();
     let mut res = Vec::new();
+
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // return Box::new(res);
+
+
     // avg
     res.push(sum / count);
     // per 50

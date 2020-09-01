@@ -25,9 +25,9 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 10;
+const THREAD_NUM: i32 = 100;
 // number of calls for each client
-const LOOP_NUM: i32 = 10000;
+const LOOP_NUM: i32 = 1000;
 
 // run sync server and client
 fn run_sync_both(output: &mut Vec<String>) {
@@ -78,12 +78,13 @@ async fn run_async_both(output: &mut Vec<String>) {
     // time
     let mut list = Vec::new();
     for i in 0..THREAD_NUM {
+        // async_thrift_test::client::run_client("127.0.0.1:9090", LOOP_NUM).await;
         list.push(async_std::task::spawn(async_thrift_test::client::run_client("127.0.0.1:9090", LOOP_NUM)));
     }
 
     // time clock start here
     let start = time::now();
-
+    //
     let raw_time_result = join_all(list).await;
 
     // time clock end here;
@@ -116,7 +117,7 @@ fn main() {
     // async part
     task::block_on(run_async_both(&mut output));
     // sync part
-    run_sync_both(&mut output);
+    // run_sync_both(&mut output);
 
     util::print_result(&output);
 }

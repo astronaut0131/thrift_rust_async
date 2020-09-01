@@ -57,6 +57,8 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
     let mut stream = TcpStream::connect(addr).await?;
+    // println!("{:?}", stream.local_addr());
+
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
     let (i_chan, o_chan) = c.split()?;
@@ -89,6 +91,7 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
     // println!("final result {}", sum);
     // println!("Test pass, It's time to cheer!");
 
+    // println!("finish client");
     Ok((Box::new(time_array)))
 }
 
