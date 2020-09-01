@@ -14,6 +14,13 @@ use std::thread;
 use std::time::Duration;
 use std::cell::RefCell;
 use crate::util::handle_time;
+use async_std::net::TcpStream;
+use async_thrift::transport::async_socket::TAsyncTcpChannel;
+use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocol, TAsyncBinaryOutputProtocol};
+use async_thrift::transport::async_framed::{TAsyncFramedReadTransport, TAsyncFramedWriteTransport};
+use crate::async_thrift_test::with_struct::{TCalculatorSyncClient, CalculatorSyncClient};
+use async_thrift::transport::TAsyncIoChannel;
+
 
 // util
 mod util;
@@ -78,7 +85,7 @@ async fn run_async_both(output: &mut Vec<String>) {
     // time
     let mut list = Vec::new();
     for i in 0..THREAD_NUM {
-        // async_thrift_test::client::run_client("127.0.0.1:9090", LOOP_NUM).await;
+        // let mut stream = TcpStream::connect("127.0.0.1:9090").await.unwrap();
         list.push(async_std::task::spawn(async_thrift_test::client::run_client("127.0.0.1:9090", LOOP_NUM)));
     }
 

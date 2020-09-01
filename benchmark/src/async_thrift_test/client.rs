@@ -13,7 +13,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 use async_thrift::transport::async_socket::TAsyncTcpChannel;
 use async_thrift::transport::async_framed::{TAsyncFramedWriteTransport, TAsyncFramedReadTransport};
-use async_thrift::transport::{AsyncWrite, TAsyncIoChannel};
+use async_thrift::transport::{AsyncWrite, TAsyncIoChannel, AsyncReadHalf, AsyncWriteHalf};
 use async_thrift::protocol::{TFieldIdentifier, TType};
 use async_thrift::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
 use async_thrift::protocol::TAsyncOutputProtocol;
@@ -54,14 +54,11 @@ pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
 pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
-    let mut time_array = Vec::with_capacity(loop_num as usize);
-
-    let mut stream = TcpStream::connect(addr).await?;
-    // println!("{:?}", stream.local_addr());
+    let mut stream = TcpStream::connect("127.0.0.1:9090").await.unwrap();
 
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
-    let (i_chan, o_chan) = c.split()?;
+    let (i_chan, o_chan) = c.split().unwrap();
 
     let i_prot = TAsyncBinaryInputProtocol::new(
         TAsyncFramedReadTransport::new(i_chan), true,
@@ -72,10 +69,11 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
 
+    let mut time_array = Vec::with_capacity(loop_num as usize);
+
     let mut sum = 0;
     for i in 0..loop_num {
         let before = time::now();
-
         let r = client.add(
             Input{
                 num1: Some(1),
