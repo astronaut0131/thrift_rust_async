@@ -6,6 +6,7 @@ use std::ops::{Deref, DerefMut};
 pub mod async_buffered;
 pub mod async_framed;
 pub mod async_socket;
+use futures::AsyncWriteExt;
 
 #[async_trait]
 pub trait AsyncRead {
@@ -90,7 +91,7 @@ pub trait TAsyncIoChannel: AsyncRead + AsyncWrite {
     /// Returned halves may share the underlying OS channel or buffer resources.
     /// Implementations **should ensure** that these two halves can be safely
     /// used independently by concurrent threads.
-    fn split(self) -> crate::Result<(AsyncReadHalf<Self>, AsyncWriteHalf<Self>)>
+    fn split(&self) -> crate::Result<(AsyncReadHalf<Self>, AsyncWriteHalf<Self>)>
         where
             Self: Sized;
 }

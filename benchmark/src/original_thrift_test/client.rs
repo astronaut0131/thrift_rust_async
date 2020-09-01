@@ -14,7 +14,7 @@ use thrift::transport::{TIoChannel, TTcpChannel};
 use crate::original_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 use std::thread;
 
-pub fn run(loop_num : i32) -> thrift::Result<()> {
+pub fn run(loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     //
     // build client
     //
@@ -22,6 +22,8 @@ pub fn run(loop_num : i32) -> thrift::Result<()> {
     // println!("connect to server on 127.0.0.1:9090");
 
     let mut c = TTcpChannel::new();
+    let mut time_array = Vec::with_capacity(loop_num as usize);
+
     c.open("127.0.0.1:9090")?;
 
     let (i_chan, o_chan) = c.split()?;
@@ -36,17 +38,19 @@ pub fn run(loop_num : i32) -> thrift::Result<()> {
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
     let mut sum = 0;
     for i in 0..loop_num {
+        let before = time::now();
         sum += client.add(
             72,
             2,
         )?;
+        let end = time::now();
+        time_array.push((end - before).num_nanoseconds().unwrap());
     }
-
 
     //
     // println!("final result {}", sum);
     // println!("Test pass, It's time to cheer!");
 
     // done!
-    Ok(())
+    Ok((Box::new(time_array)))
 }

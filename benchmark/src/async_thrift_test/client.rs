@@ -20,6 +20,7 @@ use async_thrift::protocol::TAsyncOutputProtocol;
 use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 use time::Duration;
+use futures::AsyncWriteExt;
 
 
 // test transport
@@ -50,11 +51,12 @@ pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
 }
 
 // test client
-pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<()> {
+pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
+    let mut time_array = Vec::with_capacity(loop_num as usize);
 
-    let stream = TcpStream::connect(addr).await?;
+    let mut stream = TcpStream::connect(addr).await?;
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
     let (i_chan, o_chan) = c.split()?;
@@ -70,17 +72,23 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
 
     let mut sum = 0;
     for i in 0..loop_num {
+        let before = time::now();
         sum += client.add(
             72,
             2,
         ).await?;
+        let end = time::now();
+        time_array.push((end - before).num_nanoseconds().unwrap());
     }
+
+    c.close();
+
 
     // println!("done! duration:{:?} ms", (end - start).num_milliseconds());
 
     // println!("final result {}", sum);
     // println!("Test pass, It's time to cheer!");
 
-    Ok(())
+    Ok((Box::new(time_array)))
 }
 

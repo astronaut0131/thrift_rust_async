@@ -11,6 +11,7 @@ use crate::{ApplicationError, ApplicationErrorKind};
 use super::TAsyncProcessor;
 use crate::transport::TAsyncIoChannel;
 
+
 pub struct TAsyncServer<PRC, RTF, IPF, WTF, OPF>
     where
         PRC: TAsyncProcessor + Send + Sync + 'static,
@@ -68,6 +69,7 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
         let listener = TcpListener::bind(listen_address).await?;
 
         let mut incoming = listener.incoming();
+        let mut count = 0;
         while let Some(stream) = incoming.next().await {
             // stream is a new tcp connection stream
             let stream = stream?;
@@ -77,6 +79,8 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
             let (read_protocol, write_protocol) = self.new_protocols_for_connection(stream).await?;
             task::spawn(handle_incoming_connection_server(
                 self.async_processor.clone(), read_protocol, write_protocol));
+            count += 1;
+            println!("{}", count);
         }
 
         Err(crate::Error::Application(ApplicationError {

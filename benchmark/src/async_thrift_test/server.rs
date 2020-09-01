@@ -5,6 +5,7 @@ use crate::async_thrift_test::tutorial::{CalculatorSyncProcessor, CalculatorSync
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
 use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
 use async_std::net::ToSocketAddrs;
+use async_trait::async_trait;
 
 pub async fn run_server(addr: impl ToSocketAddrs) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
@@ -19,8 +20,9 @@ pub async fn run_server(addr: impl ToSocketAddrs) {
 
 struct PartHandler;
 
+#[async_trait]
 impl CalculatorSyncHandler for PartHandler {
-    fn handle_add(&self, num1: i32, num2: i32) -> async_thrift::Result<i32> {
+    async fn handle_add(&self, num1: i32, num2: i32) -> async_thrift::Result<i32> {
         Ok(num1 + num2)
     }
 }

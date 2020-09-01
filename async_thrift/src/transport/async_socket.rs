@@ -1,4 +1,4 @@
-use async_std::net::TcpStream;
+use async_std::net::{TcpStream, Shutdown};
 use async_std::io;
 use crate::transport::{AsyncWrite, AsyncRead, AsyncReadHalf, AsyncWriteHalf, TAsyncIoChannel};
 use async_trait::async_trait;
@@ -21,10 +21,18 @@ impl TAsyncTcpChannel {
             stream: Option::Some(stream)
         }
     }
+
+    pub fn close(&mut self){
+        use futures::AsyncWriteExt;
+        if let Some(ref mut s) = self.stream {
+            s.shutdown(Shutdown::Both);
+        };
+    }
+
 }
 
 impl TAsyncIoChannel for TAsyncTcpChannel {
-    fn split(self) -> crate::Result<(AsyncReadHalf<Self>, AsyncWriteHalf<Self>)>
+    fn split(&self) -> crate::Result<(AsyncReadHalf<Self>, AsyncWriteHalf<Self>)>
         where
             Self: Sized,
     {

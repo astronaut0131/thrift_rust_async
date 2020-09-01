@@ -94,9 +94,9 @@ impl <C: TThriftClient + TCalculatorSyncClientMarker + Send> TCalculatorSyncClie
 // Calculator service processor
 //
 
-
+#[async_trait]
 pub trait CalculatorSyncHandler {
-    fn handle_add(&self, num1: i32, num2: i32) -> async_thrift::Result<i32>;
+    async fn handle_add(&self, num1: i32, num2: i32) -> async_thrift::Result<i32>;
 }
 
 pub struct CalculatorSyncProcessor<H: CalculatorSyncHandler> {
@@ -119,7 +119,7 @@ pub struct TCalculatorProcessFunctions;
 impl TCalculatorProcessFunctions {
     pub async fn process_add<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
         let args = CalculatorAddArgs::read_from_in_protocol(i_prot).await?;
-        match handler.handle_add(args.num1, args.num2) {
+        match handler.handle_add(args.num1, args.num2).await {
             Ok(handler_return) => {
                 let message_ident = TMessageIdentifier::new("add", TMessageType::Reply, incoming_sequence_number);
                 o_prot.write_message_begin(&message_ident).await?;
