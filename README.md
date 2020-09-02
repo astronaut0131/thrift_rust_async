@@ -3,16 +3,14 @@
 
 # 使用thrift生成rust代码
 
-
-
 ## 准备工作
 
-##### 1.下载Thrift编译器：https://thrift.apache.org/
+##### 1.下载并编译async_thrift编译器：https://github.com/guanjialin/compiler
 
 ##### 2.在Cargo.toml中添加以下crate
 
 ```
-thrift = "x.y.z" # x.y.z 是thrift编译器的版本
+async_thrift = "x.y.z" # x.y.z 是async thrift编译器的版本
 ordered-float = "0.3.0"
 try_from = "0.2.0"
 ```
@@ -21,93 +19,144 @@ try_from = "0.2.0"
 
 ```
 extern crate ordered_float;
-extern crate thrift;
+extern crate async_thrift;
 extern crate try_from;
 ```
 
-##### 4.给IDL（比如：Tutorial.thrift）生成rust源码
+##### 4.编写IDL文件(with_struct.thrift)
+```
+namespace cl tutorial
+namespace cpp tutorial
+namespace d tutorial
+namespace dart tutorial
+namespace java tutorial
+namespace php tutorial
+namespace perl tutorial
+namespace haxe tutorial
+namespace netstd tutorial
+
+struct Input {
+  1: i32 num1 = 0,
+  2: i32 num2,
+  3: optional string comment,
+}
+
+struct Output{
+	1: i32 res,
+  	2: optional string comment,
+}
+
+service Calculator {
+   Output add(1:Input param),
+}
+```
+
+##### 5.给IDL（比如：Tutorial.thrift）生成rust源码
 
 ```
-thrift -out my_rust_program/src --gen rs -r Tutorial.thrift
+thrift -out my_rust_program/src --gen rs with_struct.thrift
 ```
 
-##### 5.使用生成的源码
-
+##### 6.使用生成的源码(server部分)
 ```
-// add extern crates here, or in your lib.rs
-extern crate ordered_float;
-extern crate thrift;
-extern crate try_from;
+use async_thrift::server;
+use async_std::task;
+use async_std::io::Error;
+use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
+use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
+use async_std::net::ToSocketAddrs;
+use async_trait::async_trait;
+use crate::async_thrift_test::with_struct::{CalculatorSyncProcessor, CalculatorSyncHandler, Input, Output};
+use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransportFactory, TAsyncBufferedWriteTransport, TAsyncBufferedWriteTransportFactory};
+use async_std::fs::File;
+use futures::{AsyncReadExt, AsyncWriteExt};
 
-// generated Rust module
-mod tutorial;
+pub async fn run_server(addr: &str) {
+    let processor = CalculatorSyncProcessor::new(PartHandler {});
+    let r_trans_factory = TAsyncBufferedReadTransportFactory::new();
+    let w_trans_factory = TAsyncBufferedWriteTransportFactory::new();
+    let i_proto_factory = TAsyncBinaryInputProtocolFactory::new();
+    let o_proto_factory = TAsyncBinaryOutputProtocolFactory::new();
+    let mut s = server::asynced::TAsyncServer::new(r_trans_factory, i_proto_factory, w_trans_factory, o_proto_factory, processor);
 
-use thrift::protocol::{TCompactInputProtocol, TCompactOutputProtocol};
-use thrift::protocol::{TInputProtocol, TOutputProtocol};
-use thrift::transport::{TFramedReadTransport, TFramedWriteTransport};
-use thrift::transport::{TIoChannel, TTcpChannel};
+    s.listen(addr).await;
+}
 
-use tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
-use tutorial::{Operation, Work};
+struct PartHandler {}
 
-fn main() {
-    match run() {
-        Ok(()) => println!("client ran successfully"),
-        Err(e) => {
-            println!("client failed with {:?}", e);
-            std::process::exit(1);
-        }
+#[async_trait]
+impl CalculatorSyncHandler for PartHandler {
+    async fn handle_add(&self, param: Input) -> async_thrift::Result<Output> {
+        Ok(Output { res: Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
     }
 }
 
-fn run() -> thrift::Result<()> {
-    //
-    // build client
-    //
+```
 
-    println!("connect to server on 127.0.0.1:9090");
-     let mut c = TTcpChannel::new();
-    c.open("127.0.0.1:9090")?;
+##### 7.使用生成的源码(client部分)
 
-    let (i_chan, o_chan) = c.split()?;
-    
-    let i_prot = TCompactInputProtocol::new(
-        TFramedReadTransport::new(i_chan)
+```
+use std::time::{SystemTime, UNIX_EPOCH};
+use async_std::{
+    net::{TcpListener, TcpStream, ToSocketAddrs},
+    task,
+};
+use async_std::io::Error;
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+
+use async_thrift::transport::async_socket::TAsyncTcpChannel;
+use async_thrift::transport::async_framed::{TAsyncFramedWriteTransport, TAsyncFramedReadTransport};
+use async_thrift::transport::{AsyncWrite, TAsyncIoChannel, AsyncReadHalf, AsyncWriteHalf};
+use async_thrift::protocol::{TFieldIdentifier, TType};
+use async_thrift::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
+use async_thrift::protocol::TAsyncOutputProtocol;
+use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
+use time::Duration;
+use futures::AsyncWriteExt;
+use crate::async_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
+use thrift::transport::TTcpChannel;
+
+pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
+    // time
+    // let start = time::now();
+
+    let mut stream = TcpStream::connect(addr).await?;
+
+    let mut c = TAsyncTcpChannel::with_stream(stream);
+
+    let (i_chan, o_chan) = c.split().unwrap();
+
+    let i_prot = TAsyncBinaryInputProtocol::new(
+        TAsyncBufferedReadTransport::new(i_chan), true,
     );
-    let o_prot = TCompactOutputProtocol::new(
-        TFramedWriteTransport::new(o_chan)
+    let o_prot = TAsyncBinaryOutputProtocol::new(
+        TAsyncBufferedWriteTransport::new(o_chan), true,
     );
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
 
-    //
-    // alright! - let's make some calls
-    //
+    let mut time_array = Vec::with_capacity(loop_num as usize);
 
-    // two-way, void return
-    client.ping()?;
-
-    // two-way with some return
-    let res = client.calculate(
-        72,
-        Work::new(7, 8, Operation::Multiply, None)
-    )?;
-    println!("multiplied 7 and 8, got {}", res);
-       // two-way and returns a Thrift-defined exception
-    let res = client.calculate(
-        77,
-        Work::new(2, 0, Operation::Divide, None)
-    );
-    match res {
-        Ok(v) => panic!("shouldn't have succeeded with result {}", v),
-        Err(e) => println!("divide by zero failed with {:?}", e),
+    let mut sum = 0;
+    for i in 0..loop_num {
+        let before = time::now();
+        let r = client.add(
+            Input{
+                num1: Some(1),
+                num2: Some(2),
+                comment: None
+            }
+        ).await?;
+        let end = time::now();
+        sum += r.res.unwrap();
+        time_array.push((end - before).num_nanoseconds().unwrap());
     }
 
-    // one-way
-    client.zip()?;
-
-    // done!
-    Ok(())
+    c.close();
+    
+    Ok((Box::new(time_array)))
 }
 ```
 

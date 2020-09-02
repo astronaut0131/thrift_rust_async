@@ -3,3 +3,4 @@
 async_thrift/test/target
 Cargo.lock
 async_thrift/target
+a.txt

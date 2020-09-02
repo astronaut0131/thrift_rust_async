@@ -23,35 +23,6 @@ use futures::AsyncWriteExt;
 use crate::async_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
 use thrift::transport::TTcpChannel;
 
-
-// test transport
-pub async fn try_run(addr: impl ToSocketAddrs) -> Result<()> {
-    let stream = TcpStream::connect(addr).await?;
-    let c = TAsyncTcpChannel::with_stream(stream);
-    let mut t = TAsyncFramedWriteTransport::new(c);
-
-    t.write(&[0x00, 0x00, 0x00, 0x02, 0x02, 0x01]).await?;
-    t.flush().await?;
-    Ok(())
-}
-
-// test protocol
-pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
-    let stream = TcpStream::connect(addr).await?;
-    let mut channel = TAsyncTcpChannel::with_stream(stream);
-
-    let t = TAsyncFramedWriteTransport::new(channel);
-    let mut protocol = TAsyncBinaryOutputProtocol::new(t, true);
-
-    protocol.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await.unwrap();
-    protocol.write_string("foo").await.unwrap();
-    protocol.write_field_end().await.unwrap();
-    protocol.flush().await;
-
-    Ok(())
-}
-
-// test client
 pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
@@ -90,13 +61,33 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
 
     c.close();
 
-
-    // println!("done! duration:{:?} ms", (end - start).num_milliseconds());
-
-    // println!("final result {}", sum);
-    // println!("Test pass, It's time to cheer!");
-
-    // println!("finish client");
     Ok((Box::new(time_array)))
 }
 
+
+// test transport
+pub async fn try_run(addr: impl ToSocketAddrs) -> Result<()> {
+    let stream = TcpStream::connect(addr).await?;
+    let c = TAsyncTcpChannel::with_stream(stream);
+    let mut t = TAsyncFramedWriteTransport::new(c);
+
+    t.write(&[0x00, 0x00, 0x00, 0x02, 0x02, 0x01]).await?;
+    t.flush().await?;
+    Ok(())
+}
+
+// test protocol
+pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
+    let stream = TcpStream::connect(addr).await?;
+    let mut channel = TAsyncTcpChannel::with_stream(stream);
+
+    let t = TAsyncFramedWriteTransport::new(channel);
+    let mut protocol = TAsyncBinaryOutputProtocol::new(t, true);
+
+    protocol.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await.unwrap();
+    protocol.write_string("foo").await.unwrap();
+    protocol.write_field_end().await.unwrap();
+    protocol.flush().await;
+
+    Ok(())
+}

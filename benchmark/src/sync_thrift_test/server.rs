@@ -5,6 +5,8 @@ use thrift::protocol::{
 use thrift::server::TServer;
 use thrift::transport::{TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory, TWriteTransportFactory, TBufferedReadTransportFactory, TBufferedWriteTransportFactory};
 use crate::sync_thrift_test::with_struct::{CalculatorSyncHandler, Input, Output, CalculatorSyncProcessor};
+use std::fs;
+use std::io::Read;
 
 pub fn run(addr: &str) -> thrift::Result<()> {
     let port = 9090;
@@ -49,6 +51,10 @@ struct PartHandler;
 
 impl CalculatorSyncHandler for PartHandler {
     fn handle_add(&self, param: Input) -> thrift::Result<Output> {
+        let mut file = fs::File::open("a.txt").unwrap();
+        let mut buf = [0; 10000];
+        file.read(&mut buf)?;
+
         thrift::Result::Ok(Output { res: Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
     }
 }

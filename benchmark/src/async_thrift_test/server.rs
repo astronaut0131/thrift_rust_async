@@ -7,6 +7,8 @@ use async_std::net::ToSocketAddrs;
 use async_trait::async_trait;
 use crate::async_thrift_test::with_struct::{CalculatorSyncProcessor, CalculatorSyncHandler, Input, Output};
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransportFactory, TAsyncBufferedWriteTransport, TAsyncBufferedWriteTransportFactory};
+use async_std::fs::File;
+use futures::{AsyncReadExt, AsyncWriteExt};
 
 pub async fn run_server(addr: &str) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
@@ -19,11 +21,17 @@ pub async fn run_server(addr: &str) {
     s.listen(addr).await;
 }
 
-struct PartHandler;
+struct PartHandler {
+}
 
 #[async_trait]
 impl CalculatorSyncHandler for PartHandler {
     async fn handle_add(&self, param: Input) -> async_thrift::Result<Output> {
-        Ok(Output {res:Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
+        let mut file = async_std::fs::File::open("a.txt").await.unwrap();
+        let mut buf = [0; 10000];
+        file.read(&mut buf).await?;
+        file.close().await;
+
+        Ok(Output { res: Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
     }
 }
