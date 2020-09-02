@@ -2,9 +2,8 @@ use super::{TAsyncReadTransport, TAsyncReadTransportFactory, TAsyncWriteTranspor
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::cmp;
-use async_std::io;
+use std::io;
 use async_trait::async_trait;
-use async_std::net::TcpStream;
 use crate::transport::{AsyncRead, AsyncWrite};
 use std::io::Cursor;
 

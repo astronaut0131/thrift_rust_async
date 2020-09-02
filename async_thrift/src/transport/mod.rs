@@ -1,12 +1,10 @@
-use async_std::net::TcpStream;
-use async_std::io;
+use std::io;
 use async_trait::async_trait;
 use std::ops::{Deref, DerefMut};
 
 pub mod async_buffered;
 pub mod async_framed;
 pub mod async_socket;
-use futures::AsyncWriteExt;
 
 #[async_trait]
 pub trait AsyncRead {

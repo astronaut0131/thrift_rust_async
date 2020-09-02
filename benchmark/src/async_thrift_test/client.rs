@@ -6,7 +6,7 @@ use async_std::{
     net::{TcpListener, TcpStream, ToSocketAddrs},
     task,
 };
-use async_std::io::Error;
+use std::io::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

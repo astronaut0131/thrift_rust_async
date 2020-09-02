@@ -1,5 +1,4 @@
 use super::{TAsyncReadTransport, TAsyncReadTransportFactory, TAsyncWriteTransport, TAsyncWriteTransportFactory, AsyncWrite, AsyncRead};
-use async_std::net::TcpStream;
 use async_trait::async_trait;
 use std::cmp;
 use std::io;

@@ -1,5 +1,4 @@
 use crate::protocol::{TAsyncOutputProtocol, TAsyncInputProtocol};
-use crate::Result;
 use async_trait::async_trait;
 use crate::errors::{ApplicationError, ApplicationErrorKind};
 use crate::protocol::{TMessageIdentifier, TMessageType};

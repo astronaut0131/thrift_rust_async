@@ -1,10 +1,11 @@
-use async_std::net::{TcpStream, Shutdown};
-use async_std::io;
+use async_std::{
+    net::{TcpStream, Shutdown},
+    prelude::*
+};
+use std::io;
 use crate::transport::{AsyncWrite, AsyncRead, AsyncReadHalf, AsyncWriteHalf, TAsyncIoChannel};
 use async_trait::async_trait;
-use async_std::prelude::*;
-use async_std::io::ErrorKind;
-use crate::errors::{new_transport_error, TransportErrorKind};
+use std::io::ErrorKind;
 
 #[derive(Debug, Default)]
 pub struct TAsyncTcpChannel {
@@ -24,7 +25,6 @@ impl TAsyncTcpChannel {
 
     /// close a tcp channel
     pub fn close(&mut self){
-        use futures::AsyncWriteExt;
         if let Some(ref mut s) = self.stream {
             s.shutdown(Shutdown::Both).unwrap();
         };
