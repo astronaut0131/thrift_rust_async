@@ -35,7 +35,7 @@ const ASYNC_LOCATION: usize = 2;
 // number of clients
 const THREAD_NUM: i32 = 64;
 // number of calls for each client
-const LOOP_NUM: i32 = 1000;
+const LOOP_NUM: i32 = 5000;
 
 // whether to run component
 const RUN_CLIENT: bool = true;

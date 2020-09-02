@@ -22,7 +22,12 @@ pub struct TAsyncBinaryInputProtocol<T>
         T: TAsyncReadTransport,
 {
     strict: bool,
-    pub transport: T, // FIXME: shouldn't be public
+    pub transport: T,
+    // FIXME: shouldn't be public
+    buf1: [u8; 1],
+    buf2: [u8; 2],
+    buf4: [u8; 4],
+    buf8: [u8; 8],
 }
 
 impl<'a, T> TAsyncBinaryInputProtocol<T>
@@ -35,8 +40,12 @@ impl<'a, T> TAsyncBinaryInputProtocol<T>
     /// version number in the protocol header.
     pub fn new(transport: T, strict: bool) -> TAsyncBinaryInputProtocol<T> {
         TAsyncBinaryInputProtocol {
-            strict: strict,
-            transport: transport,
+            strict,
+            transport,
+            buf1: [0; 1],
+            buf2: [0; 2],
+            buf4: [0; 4],
+            buf8: [0; 8],
         }
     }
 }
@@ -47,7 +56,12 @@ pub struct TAsyncBinaryOutputProtocol<T>
         T: TAsyncWriteTransport,
 {
     strict: bool,
-    pub transport: T, // FIXME: do not make public; only public for testing!
+    pub transport: T,
+    // FIXME: do not make public; only public for testing!
+    buf1: [u8; 1],
+    buf2: [u8; 2],
+    buf4: [u8; 4],
+    buf8: [u8; 8],
 }
 
 
@@ -61,8 +75,12 @@ impl<T> TAsyncBinaryOutputProtocol<T>
     /// protocol version number in the protocol header.
     pub fn new(transport: T, strict: bool) -> TAsyncBinaryOutputProtocol<T> {
         TAsyncBinaryOutputProtocol {
-            strict: strict,
-            transport: transport,
+            strict,
+            transport,
+            buf1: [0; 1],
+            buf2: [0; 2],
+            buf4: [0; 4],
+            buf8: [0; 8],
         }
     }
 }
@@ -108,22 +126,21 @@ impl<T> TAsyncInputProtocol for TAsyncBinaryInputProtocol<T>
 {
     #[cfg_attr(feature = "cargo-clippy", allow(collapsible_if))]
     async fn read_message_begin(&mut self) -> crate::Result<TMessageIdentifier> {
-        let mut first_bytes = vec![0; 4];
-        self.transport.read(&mut first_bytes[..]).await?;
+        self.transport.read(&mut self.buf4).await?;
 
         // the thrift version header is intentionally negative
         // so the first check we'll do is see if the sign bit is set
         // and if so - assume it's the protocol-version header
-        if first_bytes[0] >= 8 {
+        if self.buf4[0] >= 8 {
             // apparently we got a protocol-version header - check
             // it, and if it matches, read the rest of the fields
-            if first_bytes[0..2] != [0x80, 0x01] {
+            if self.buf4[0..2] != [0x80, 0x01] {
                 Err(crate::errors::Error::Protocol(ProtocolError {
                     kind: ProtocolErrorKind::BadVersion,
-                    message: format!("received bad version: {:?}", &first_bytes[0..2]),
+                    message: format!("received bad version: {:?}", &self.buf4[0..2]),
                 }))
             } else {
-                let message_type: TMessageType = TryFrom::try_from(first_bytes[3])?;
+                let message_type: TMessageType = TryFrom::try_from(self.buf4[3])?;
                 let name = self.read_string().await?;
                 let sequence_number = self.read_i32().await?;
                 Ok(TMessageIdentifier::new(name, message_type, sequence_number))
@@ -136,13 +153,13 @@ impl<T> TAsyncInputProtocol for TAsyncBinaryInputProtocol<T>
                 // requires the protocol-version header to be written first
                 Err(crate::Error::Protocol(ProtocolError {
                     kind: ProtocolErrorKind::BadVersion,
-                    message: format!("received bad version: {:?}", &first_bytes[0..2]),
+                    message: format!("received bad version: {:?}", &self.buf4[0..2]),
                 }))
             } else {
                 // in the non-strict version the first message field
                 // is the message name. strings (byte arrays) are length-prefixed,
                 // so we've just read the length in the first 4 bytes
-                let name_size = BigEndian::read_i32(&first_bytes) as usize;
+                let name_size = BigEndian::read_i32(&self.buf4) as usize;
                 let mut name_buf: Vec<u8> = vec![0; name_size];
                 self.transport.read(&mut name_buf).await?;
                 let name = String::from_utf8(name_buf);
@@ -201,43 +218,33 @@ impl<T> TAsyncInputProtocol for TAsyncBinaryInputProtocol<T>
     }
 
     async fn read_i8(&mut self) -> crate::Result<i8> {
-        let mut buf = [0; 1];
-        self.transport.read(&mut buf).await;
-        let mut rdr = Cursor::new(buf);
+        self.transport.read(&mut self.buf1).await;
 
-        Ok(rdr.read_i8()?)
+        Ok(self.buf1[0] as i8)
     }
 
     async fn read_i16(&mut self) -> crate::Result<i16> {
-        let mut buf = [0; 2];
-        self.transport.read(&mut buf).await;
-        let mut rdr = Cursor::new(buf);
+        self.transport.read(&mut self.buf2).await;
 
-        Ok(rdr.read_i16::<BigEndian>()?)
+        Ok(BigEndian::read_i16(&mut self.buf2))
     }
 
     async fn read_i32(&mut self) -> crate::Result<i32> {
-        let mut buf = [0; 4];
-        self.transport.read(&mut buf).await;
-        let mut rdr = Cursor::new(buf);
+        self.transport.read(&mut self.buf4).await;
 
-        Ok(rdr.read_i32::<BigEndian>()?)
+        Ok(BigEndian::read_i32(&mut self.buf4))
     }
 
     async fn read_i64(&mut self) -> crate::Result<i64> {
-        let mut buf = [0; 8];
-        self.transport.read(&mut buf).await;
-        let mut rdr = Cursor::new(buf);
+        self.transport.read(&mut self.buf8).await;
 
-        Ok(rdr.read_i64::<BigEndian>()?)
+        Ok(BigEndian::read_i64(&mut self.buf8))
     }
 
     async fn read_double(&mut self) -> crate::Result<f64> {
-        let mut buf = [0; 8];
-        self.transport.read(&mut buf).await;
-        let mut rdr = Cursor::new(buf);
+        self.transport.read(&mut self.buf8).await;
 
-        Ok(rdr.read_f64::<BigEndian>()?)
+        Ok(BigEndian::read_f64(&mut self.buf8))
     }
 
     async fn read_string(&mut self) -> crate::Result<String> {
@@ -282,11 +289,9 @@ impl<T> TAsyncInputProtocol for TAsyncBinaryInputProtocol<T>
     //
 
     async fn read_byte(&mut self) -> crate::Result<u8> {
-        let mut buf = [0; 1];
-        self.transport.read(&mut buf).await;
-        let mut rdr = Cursor::new(buf);
+        self.transport.read(&mut self.buf1).await;
 
-        Ok(rdr.read_u8()?)
+        Ok(self.buf1[0])
     }
 }
 
@@ -368,41 +373,35 @@ impl<T> TAsyncOutputProtocol for TAsyncBinaryOutputProtocol<T>
     }
 
     async fn write_i8(&mut self, i: i8) -> crate::Result<()> {
-        let mut wtr = Vec::new();
-        wtr.write_i8(i).unwrap();
-        self.transport.write(&wtr).await;
+        self.transport.write(&[i as u8; 1]).await;
 
         Ok(())
     }
 
     async fn write_i16(&mut self, i: i16) -> crate::Result<()> {
-        let mut wtr = Vec::new();
-        wtr.write_i16::<BigEndian>(i).unwrap();
-        self.transport.write(&wtr).await;
-
+        BigEndian::write_i16(&mut self.buf2, i);
+        self.transport.write(&self.buf2).await;
+        ///
         Ok(())
     }
 
     async fn write_i32(&mut self, i: i32) -> crate::Result<()> {
-        let mut wtr = Vec::new();
-        wtr.write_i32::<BigEndian>(i).unwrap();
-        self.transport.write(&wtr).await;
+        BigEndian::write_i32(&mut self.buf4, i);
+        self.transport.write(&self.buf4).await;
 
         Ok(())
     }
 
     async fn write_i64(&mut self, i: i64) -> crate::Result<()> {
-        let mut wtr = Vec::new();
-        wtr.write_i64::<BigEndian>(i).unwrap();
-        self.transport.write(&wtr).await;
+        BigEndian::write_i64(&mut self.buf8, i);
+        self.transport.write(&self.buf8).await;
 
         Ok(())
     }
 
     async fn write_double(&mut self, d: f64) -> crate::Result<()> {
-        let mut wtr = Vec::new();
-        wtr.write_f64::<BigEndian>(d).unwrap();
-        self.transport.write(&wtr).await;
+        BigEndian::write_f64(&mut self.buf8, d);
+        self.transport.write(&self.buf8).await;
 
         Ok(())
     }
@@ -453,9 +452,7 @@ impl<T> TAsyncOutputProtocol for TAsyncBinaryOutputProtocol<T>
     //
 
     async fn write_byte(&mut self, b: u8) -> crate::Result<()> {
-        let mut wtr = Vec::new();
-        wtr.write_u8(b).unwrap();
-        self.transport.write(&wtr).await;
+        self.transport.write(&[b; 1]).await;
 
         Ok(())
     }
