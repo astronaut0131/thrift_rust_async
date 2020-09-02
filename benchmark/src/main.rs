@@ -33,9 +33,9 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 128;
+const THREAD_NUM: i32 = 256;
 // number of calls for each client
-const LOOP_NUM: i32 = 5000;
+const LOOP_NUM: i32 = 1000;
 
 // whether to run component
 const RUN_CLIENT: bool = true;

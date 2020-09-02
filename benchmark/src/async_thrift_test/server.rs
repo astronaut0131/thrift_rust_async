@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use crate::async_thrift_test::with_struct::{CalculatorSyncProcessor, CalculatorSyncHandler, Input, Output};
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransportFactory, TAsyncBufferedWriteTransport, TAsyncBufferedWriteTransportFactory};
 
-pub async fn run_server(addr: impl ToSocketAddrs) {
+pub async fn run_server(addr: &str) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
     let r_trans_factory = TAsyncBufferedReadTransportFactory::new();
     let w_trans_factory = TAsyncBufferedWriteTransportFactory::new();

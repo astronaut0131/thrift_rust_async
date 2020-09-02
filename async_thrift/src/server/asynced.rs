@@ -1,5 +1,5 @@
 use async_std::sync::Arc;
-use async_std::net::{ToSocketAddrs, TcpListener, TcpStream};
+use async_std::net::{ToSocketAddrs, TcpListener, TcpStream, SocketAddr};
 use async_std::task;
 use async_std::io;
 use async_std::prelude::*;
@@ -10,6 +10,7 @@ use crate::errors::TransportErrorKind;
 use crate::{ApplicationError, ApplicationErrorKind};
 use super::TAsyncProcessor;
 use crate::transport::TAsyncIoChannel;
+use socket2::{Socket, Domain, Type};
 
 
 pub struct TAsyncServer<PRC, RTF, IPF, WTF, OPF>
@@ -65,10 +66,15 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
     ///
     /// Return `Err` when the server cannot bind to `listen_address` or there
     /// is an unrecoverable error.
-    pub async fn listen<A: ToSocketAddrs>(&mut self, listen_address: A) -> crate::Result<()> {
-        let listener = TcpListener::bind(listen_address).await?;
+    pub async fn listen(&mut self, listen_address: &str) -> crate::Result<()> {
+        let socket = Socket::new(Domain::ipv4(), Type::stream(), None).unwrap();
+        socket.bind(&listen_address.parse::<SocketAddr>().unwrap().into());
+        socket.listen(512);
 
-        let mut incoming = listener.incoming();
+        let listener = socket.into_tcp_listener();
+        let async_listener = TcpListener::from(listener);
+
+        let mut incoming = async_listener.incoming();
         // let mut count = 0;
         while let Some(stream) = incoming.next().await {
             // stream is a new tcp connection stream

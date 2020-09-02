@@ -83,8 +83,8 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
                 comment: None
             }
         ).await?;
-        sum += r.res.unwrap();
         let end = time::now();
+        sum += r.res.unwrap();
         time_array.push((end - before).num_nanoseconds().unwrap());
     }
 

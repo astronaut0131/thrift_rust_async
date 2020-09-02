@@ -5,10 +5,10 @@ use std::cmp;
 use std::io;
 
 /// Default capacity of the read buffer in bytes.
-const READ_CAPACITY: usize = 4194304;
+const READ_CAPACITY: usize = 1024;
 
 /// Default capacity of the write buffer in bytes..
-const WRITE_CAPACITY: usize = 4194304;
+const WRITE_CAPACITY: usize = 1024;
 
 
 #[derive(Debug)]
