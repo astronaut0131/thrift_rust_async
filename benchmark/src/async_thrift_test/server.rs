@@ -7,8 +7,8 @@ use std::io::Error;
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
 use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
 use async_trait::async_trait;
-use crate::async_thrift_test::with_struct::{CalculatorSyncProcessor, CalculatorSyncHandler, Input, Output};
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransportFactory, TAsyncBufferedWriteTransport, TAsyncBufferedWriteTransportFactory};
+use crate::async_thrift_test::tutorial::{CalculatorSyncProcessor, CalculatorSyncHandler};
 
 pub async fn run_server(addr: &str) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
@@ -26,7 +26,7 @@ struct PartHandler {
 
 #[async_trait]
 impl CalculatorSyncHandler for PartHandler {
-    async fn handle_add(&self, param: Input) -> async_thrift::Result<Output> {
-        Ok(Output { res: Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
+    async fn handle_ping(&self) -> async_thrift::Result<()> {
+        Ok(())
     }
 }

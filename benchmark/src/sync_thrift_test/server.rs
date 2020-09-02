@@ -4,7 +4,7 @@ use thrift::protocol::{
 };
 use thrift::server::TServer;
 use thrift::transport::{TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory, TWriteTransportFactory, TBufferedReadTransportFactory, TBufferedWriteTransportFactory};
-use crate::sync_thrift_test::with_struct::{CalculatorSyncHandler, Input, Output, CalculatorSyncProcessor};
+use crate::sync_thrift_test::tutorial::{CalculatorSyncHandler, CalculatorSyncProcessor};
 
 pub fn run(addr: &str) -> thrift::Result<()> {
     let port = 9090;
@@ -48,7 +48,7 @@ pub fn run(addr: &str) -> thrift::Result<()> {
 struct PartHandler;
 
 impl CalculatorSyncHandler for PartHandler {
-    fn handle_add(&self, param: Input) -> thrift::Result<Output> {
-        thrift::Result::Ok(Output { res: Some(param.num1.unwrap() + param.num2.unwrap()), comment: None })
+    fn handle_ping(&self) -> thrift::Result<()> {
+        Ok(())
     }
 }

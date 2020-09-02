@@ -20,8 +20,8 @@ use async_thrift::protocol::TAsyncOutputProtocol;
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 use time::Duration;
 use futures::AsyncWriteExt;
-use crate::async_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
 use thrift::transport::TTcpChannel;
+use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 
 pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
@@ -44,18 +44,11 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
 
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
-    let mut sum = 0;
-    for i in 0..loop_num {
+    for _ in 0..loop_num {
         let before = time::now();
-        let r = client.add(
-            Input{
-                num1: Some(1),
-                num2: Some(2),
-                comment: None
-            }
-        ).await?;
+        client.ping().await?;
         let end = time::now();
-        sum += r.res.unwrap();
+
         time_array.push((end - before).num_nanoseconds().unwrap());
     }
 

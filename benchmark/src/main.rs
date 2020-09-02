@@ -18,7 +18,6 @@ use async_std::net::TcpStream;
 use async_thrift::transport::async_socket::TAsyncTcpChannel;
 use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocol, TAsyncBinaryOutputProtocol};
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransport, TAsyncFramedWriteTransport};
-use crate::async_thrift_test::with_struct::{TCalculatorSyncClient, CalculatorSyncClient};
 use async_thrift::transport::TAsyncIoChannel;
 use thrift::transport::TTcpChannel;
 
@@ -33,7 +32,7 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 64;
+const THREAD_NUM: i32 = 32;
 // number of calls for each client
 const LOOP_NUM: i32 = 5000;
 

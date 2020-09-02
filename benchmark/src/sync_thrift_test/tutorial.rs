@@ -32,7 +32,7 @@ use thrift::server::TProcessor;
 //
 
 pub trait TCalculatorSyncClient {
-  fn add(&mut self, num1: i32, num2: i32) -> thrift::Result<i32>;
+  fn ping(&mut self) -> thrift::Result<()>;
 }
 
 pub trait TCalculatorSyncClientMarker {}
@@ -59,12 +59,12 @@ impl <IP, OP> TThriftClient for CalculatorSyncClient<IP, OP> where IP: TInputPro
 impl <IP, OP> TCalculatorSyncClientMarker for CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {}
 
 impl <C: TThriftClient + TCalculatorSyncClientMarker> TCalculatorSyncClient for C {
-  fn add(&mut self, num1: i32, num2: i32) -> thrift::Result<i32> {
+  fn ping(&mut self) -> thrift::Result<()> {
     (
       {
         self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("add", TMessageType::Call, self.sequence_number());
-        let call_args = CalculatorAddArgs { num1: num1, num2: num2 };
+        let message_ident = TMessageIdentifier::new("ping", TMessageType::Call, self.sequence_number());
+        let call_args = CalculatorPingArgs {  };
         self.o_prot_mut().write_message_begin(&message_ident)?;
         call_args.write_to_out_protocol(self.o_prot_mut())?;
         self.o_prot_mut().write_message_end()?;
@@ -74,14 +74,14 @@ impl <C: TThriftClient + TCalculatorSyncClientMarker> TCalculatorSyncClient for 
     {
       let message_ident = self.i_prot_mut().read_message_begin()?;
       verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("add", &message_ident.name)?;
+      verify_expected_service_call("ping", &message_ident.name)?;
       if message_ident.message_type == TMessageType::Exception {
         let remote_error = thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut())?;
         self.i_prot_mut().read_message_end()?;
         return Err(thrift::Error::Application(remote_error))
       }
       verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = CalculatorAddResult::read_from_in_protocol(self.i_prot_mut())?;
+      let result = CalculatorPingResult::read_from_in_protocol(self.i_prot_mut())?;
       self.i_prot_mut().read_message_end()?;
       result.ok_or()
     }
@@ -93,7 +93,7 @@ impl <C: TThriftClient + TCalculatorSyncClientMarker> TCalculatorSyncClient for 
 //
 
 pub trait CalculatorSyncHandler {
-  fn handle_add(&self, num1: i32, num2: i32) -> thrift::Result<i32>;
+  fn handle_ping(&self) -> thrift::Result<()>;
 }
 
 pub struct CalculatorSyncProcessor<H: CalculatorSyncHandler> {
@@ -106,21 +106,21 @@ impl <H: CalculatorSyncHandler> CalculatorSyncProcessor<H> {
       handler,
     }
   }
-  fn process_add(&self, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    TCalculatorProcessFunctions::process_add(&self.handler, incoming_sequence_number, i_prot, o_prot)
+  fn process_ping(&self, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
+    TCalculatorProcessFunctions::process_ping(&self.handler, incoming_sequence_number, i_prot, o_prot)
   }
 }
 
 pub struct TCalculatorProcessFunctions;
 
 impl TCalculatorProcessFunctions {
-  pub fn process_add<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    let args = CalculatorAddArgs::read_from_in_protocol(i_prot)?;
-    match handler.handle_add(args.num1, args.num2) {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("add", TMessageType::Reply, incoming_sequence_number);
+  pub fn process_ping<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
+    let _ = CalculatorPingArgs::read_from_in_protocol(i_prot)?;
+    match handler.handle_ping() {
+      Ok(_) => {
+        let message_ident = TMessageIdentifier::new("ping", TMessageType::Reply, incoming_sequence_number);
         o_prot.write_message_begin(&message_ident)?;
-        let ret = CalculatorAddResult { result_value: Some(handler_return) };
+        let ret = CalculatorPingResult {  };
         ret.write_to_out_protocol(o_prot)?;
         o_prot.write_message_end()?;
         o_prot.flush()
@@ -128,7 +128,7 @@ impl TCalculatorProcessFunctions {
       Err(e) => {
         match e {
           thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("add", TMessageType::Exception, incoming_sequence_number);
+            let message_ident = TMessageIdentifier::new("ping", TMessageType::Exception, incoming_sequence_number);
             o_prot.write_message_begin(&message_ident)?;
             thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot)?;
             o_prot.write_message_end()?;
@@ -141,7 +141,7 @@ impl TCalculatorProcessFunctions {
                 e.description()
               )
             };
-            let message_ident = TMessageIdentifier::new("add", TMessageType::Exception, incoming_sequence_number);
+            let message_ident = TMessageIdentifier::new("ping", TMessageType::Exception, incoming_sequence_number);
             o_prot.write_message_begin(&message_ident)?;
             thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot)?;
             o_prot.write_message_end()?;
@@ -157,8 +157,8 @@ impl <H: CalculatorSyncHandler> TProcessor for CalculatorSyncProcessor<H> {
   fn process(&self, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
     let message_ident = i_prot.read_message_begin()?;
     let res = match &*message_ident.name {
-      "add" => {
-        self.process_add(message_ident.sequence_number, i_prot, o_prot)
+      "ping" => {
+        self.process_ping(message_ident.sequence_number, i_prot, o_prot)
       },
       method => {
         Err(
@@ -176,20 +176,16 @@ impl <H: CalculatorSyncHandler> TProcessor for CalculatorSyncProcessor<H> {
 }
 
 //
-// CalculatorAddArgs
+// CalculatorPingArgs
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct CalculatorAddArgs {
-  num1: i32,
-  num2: i32,
+struct CalculatorPingArgs {
 }
 
-impl CalculatorAddArgs {
-  fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorAddArgs> {
+impl CalculatorPingArgs {
+  fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorPingArgs> {
     i_prot.read_struct_begin()?;
-    let mut f_1: Option<i32> = None;
-    let mut f_2: Option<i32> = None;
     loop {
       let field_ident = i_prot.read_field_begin()?;
       if field_ident.field_type == TType::Stop {
@@ -197,14 +193,6 @@ impl CalculatorAddArgs {
       }
       let field_id = field_id(&field_ident)?;
       match field_id {
-        1 => {
-          let val = i_prot.read_i32()?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_i32()?;
-          f_2 = Some(val);
-        },
         _ => {
           i_prot.skip(field_ident.field_type)?;
         },
@@ -212,41 +200,28 @@ impl CalculatorAddArgs {
       i_prot.read_field_end()?;
     }
     i_prot.read_struct_end()?;
-    verify_required_field_exists("CalculatorAddArgs.num1", &f_1)?;
-    verify_required_field_exists("CalculatorAddArgs.num2", &f_2)?;
-    let ret = CalculatorAddArgs {
-      num1: f_1.expect("auto-generated code should have checked for presence of required fields"),
-      num2: f_2.expect("auto-generated code should have checked for presence of required fields"),
-    };
+    let ret = CalculatorPingArgs {};
     Ok(ret)
   }
   fn write_to_out_protocol(&self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("add_args");
+    let struct_ident = TStructIdentifier::new("ping_args");
     o_prot.write_struct_begin(&struct_ident)?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("num1", TType::I32, 1))?;
-    o_prot.write_i32(self.num1)?;
-    o_prot.write_field_end()?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("num2", TType::I32, 2))?;
-    o_prot.write_i32(self.num2)?;
-    o_prot.write_field_end()?;
     o_prot.write_field_stop()?;
     o_prot.write_struct_end()
   }
 }
 
 //
-// CalculatorAddResult
+// CalculatorPingResult
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct CalculatorAddResult {
-  result_value: Option<i32>,
+struct CalculatorPingResult {
 }
 
-impl CalculatorAddResult {
-  fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorAddResult> {
+impl CalculatorPingResult {
+  fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorPingResult> {
     i_prot.read_struct_begin()?;
-    let mut f_0: Option<i32> = None;
     loop {
       let field_ident = i_prot.read_field_begin()?;
       if field_ident.field_type == TType::Stop {
@@ -254,10 +229,6 @@ impl CalculatorAddResult {
       }
       let field_id = field_id(&field_ident)?;
       match field_id {
-        0 => {
-          let val = i_prot.read_i32()?;
-          f_0 = Some(val);
-        },
         _ => {
           i_prot.skip(field_ident.field_type)?;
         },
@@ -265,38 +236,17 @@ impl CalculatorAddResult {
       i_prot.read_field_end()?;
     }
     i_prot.read_struct_end()?;
-    let ret = CalculatorAddResult {
-      result_value: f_0,
-    };
+    let ret = CalculatorPingResult {};
     Ok(ret)
   }
   fn write_to_out_protocol(&self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("CalculatorAddResult");
+    let struct_ident = TStructIdentifier::new("CalculatorPingResult");
     o_prot.write_struct_begin(&struct_ident)?;
-    if let Some(fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I32, 0))?;
-      o_prot.write_i32(fld_var)?;
-      o_prot.write_field_end()?;
-      ()
-    } else {
-      ()
-    }
     o_prot.write_field_stop()?;
     o_prot.write_struct_end()
   }
-  fn ok_or(self) -> thrift::Result<i32> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for CalculatorAdd"
-          )
-        )
-      )
-    }
+  fn ok_or(self) -> thrift::Result<()> {
+    Ok(())
   }
 }
 

@@ -12,10 +12,10 @@ use thrift::transport::{TFramedReadTransport, TFramedWriteTransport};
 use thrift::transport::{TIoChannel, TTcpChannel};
 
 use std::thread;
-use crate::sync_thrift_test::with_struct::{CalculatorSyncClient, Input, TCalculatorSyncClient};
 use std::net::TcpStream;
 use self::thrift::transport::{TBufferedReadTransportFactory, TBufferedReadTransport, TBufferedWriteTransport};
 use self::thrift::protocol::{TBinaryInputProtocol, TBinaryOutputProtocol};
+use crate::sync_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 
 pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
     //
@@ -38,15 +38,11 @@ pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)>
     );
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
-    let mut sum = 0;
     for i in 0..loop_num {
         let before = time::now();
-        sum += client.add( Input{
-            num1: Some(72),
-            num2: Some(2),
-            comment: None
-        })?.res.unwrap();
+        client.ping()?;
         let end = time::now();
+
         time_array.push((end - before).num_nanoseconds().unwrap());
     }
 

@@ -1,5 +1,5 @@
 pub mod server;
 pub mod client;
-pub mod with_struct;
+pub mod tutorial;
 pub mod testthrift;
 
