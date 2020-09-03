@@ -367,5 +367,7 @@ pub struct Foo {
 
 Map ,List 和Set常量需要一个常量结构体包含
 
+目前 async uring 代码还没有完成，暂时无法使用
+
 ------
 
