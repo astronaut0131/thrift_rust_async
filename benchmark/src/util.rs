@@ -1,10 +1,11 @@
 use std::borrow::Borrow;
+use std::env;
 
 /// print time result in md table
 pub fn format_result(mode: String, call_num: i64, total_time_in_ms: i64,
                      avg_time: i64, per_50_time: i64, per_90_time: i64,
                      per_95_time: i64, per_99_time: i64,
-                     per_999_time: i64, max_time : i64) -> String {
+                     per_999_time: i64, max_time: i64) -> String {
     format!("###{}
 |  total time |   query per second  |  avg time   |  per 50 time |  per 90 time |  per 95 time |  per 99 time | per 99.9 time | max time |
 |  ---------  |   ----------------  | ----------  | ------------ | ------------ | ------------ | ------------ | ----------- |  -------- |
@@ -15,10 +16,9 @@ pub fn format_result(mode: String, call_num: i64, total_time_in_ms: i64,
 
 /// print time result in csv
 pub fn format_result_csv(mode: String, client_num: i64, loop_num: i64, total_time_in_ms: i64,
-                     avg_time: i64, per_50_time: i64, per_90_time: i64,
-                     per_95_time: i64, per_99_time: i64,
-                     per_999_time: i64, max_time : i64) -> String {
-
+                         avg_time: i64, per_50_time: i64, per_90_time: i64,
+                         per_95_time: i64, per_99_time: i64,
+                         per_999_time: i64, max_time: i64) -> String {
     let call_num = client_num * total_time_in_ms;
 
     format!("### {}
@@ -125,7 +125,15 @@ pub fn handle_time(time_arrays: Vec<Box<Vec<i64>>>) -> Box<Vec<i64>> {
     return Box::new(res);
 }
 
-
-pub fn parse_args(args : &mut Vec<String>){
-
+/// parse command line args
+pub fn parse_args(args: &mut Vec<String>) {
+    let mut loc = 1000000;
+    for s in env::args() {
+        if loc == 1000000 {
+            loc = 0;
+        } else {
+            args[loc] = s;
+            loc += 1;
+        }
+    }
 }

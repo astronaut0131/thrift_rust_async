@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransportFactory, TAsyncBufferedWriteTransport, TAsyncBufferedWriteTransportFactory};
 use crate::async_thrift_test::tutorial::{CalculatorSyncProcessor, CalculatorSyncHandler};
 
-pub async fn run_server(addr: &str) {
+pub async fn run_server(addr: String) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
     let r_trans_factory = TAsyncBufferedReadTransportFactory::new();
     let w_trans_factory = TAsyncBufferedWriteTransportFactory::new();
@@ -18,7 +18,7 @@ pub async fn run_server(addr: &str) {
     let o_proto_factory = TAsyncBinaryOutputProtocolFactory::new();
     let mut s = server::asynced::TAsyncServer::new(r_trans_factory, i_proto_factory, w_trans_factory, o_proto_factory, processor);
 
-    s.listen(addr).await;
+    s.listen(addr.as_str()).await;
 }
 
 struct PartHandler {
