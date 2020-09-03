@@ -41,6 +41,9 @@ const THREAD_NUM: usize = 4;
 const LOOP_NUM: usize = 5;
 const ADDR: usize = 6;
 
+// print format
+const PRINT_CSV: bool = false;
+
 ///
 const DEFAULT_RUN_CLIENT: &str = "true";
 const DEFAULT_RUN_SERVER: &str = "true";
@@ -159,12 +162,21 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
 
         // handle raw time result to statistic
         let time_statistic = handle_time(res);
-        output[ASYNC_LOCATION] = util::format_result(String::from("async"), args[THREAD_NUM].parse::<i64>().unwrap() * args[LOOP_NUM].parse::<i64>().unwrap(),
-                                                     (end - start).num_milliseconds(),
-                                                     time_statistic[0], time_statistic[1],
-                                                     time_statistic[2], time_statistic[3],
-                                                     time_statistic[4], time_statistic[5],
-                                                     time_statistic[6]);
+        if !PRINT_CSV {
+            output[ASYNC_LOCATION] = util::format_result(String::from("async"), (THREAD_NUM * LOOP_NUM) as i64,
+                                                         (end - start).num_milliseconds(),
+                                                         time_statistic[0], time_statistic[1],
+                                                         time_statistic[2], time_statistic[3],
+                                                         time_statistic[4], time_statistic[5],
+                                                         time_statistic[6]);
+        } else {
+            output[ASYNC_LOCATION] = util::format_result_csv(String::from("async"), THREAD_NUM as i64, LOOP_NUM as i64,
+                                                             (end - start).num_milliseconds(),
+                                                             time_statistic[0], time_statistic[1],
+                                                             time_statistic[2], time_statistic[3],
+                                                             time_statistic[4], time_statistic[5],
+                                                             time_statistic[6]);
+        }
     }
 
     if args[RUN_SERVER] == String::from("true") {
@@ -175,8 +187,6 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
 }
 
 fn main() {
-    // for profile
-    // let guard = pprof::ProfilerGuard::new(100).unwrap();
     let mut args: Vec<String> = vec![String::from(DEFAULT_RUN_CLIENT),
                                      String::from(DEFAULT_RUN_SERVER),
                                      String::from(DEFAULT_RUN_SYNC),
@@ -201,11 +211,6 @@ fn main() {
     if arc_args[RUN_SYNC] == String::from("true") {
         run_sync_both(&mut output, Arc::clone(&arc_args));
     }
-
-    // if let Ok(report) = guard.report().build() {
-    //     let file = File::create("flamegraph.svg").unwrap();
-    //     report.flamegraph(file).unwrap();
-    // };
 
     util::print_result(&output);
 }
