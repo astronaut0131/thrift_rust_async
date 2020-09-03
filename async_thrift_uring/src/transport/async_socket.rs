@@ -1,11 +1,12 @@
 use async_std::{
-    net::{TcpStream, Shutdown},
-    prelude::*
+    net::{Shutdown, TcpStream},
+    prelude::*,
 };
-use std::io;
-use crate::transport::{AsyncWrite, AsyncRead, AsyncReadHalf, AsyncWriteHalf, TAsyncIoChannel};
 use async_trait::async_trait;
+use std::io;
 use std::io::ErrorKind;
+
+use crate::transport::{AsyncRead, AsyncReadHalf, AsyncWrite, AsyncWriteHalf, TAsyncIoChannel};
 
 #[derive(Debug, Default)]
 pub struct TAsyncTcpChannel {
@@ -24,12 +25,11 @@ impl TAsyncTcpChannel {
     }
 
     /// close a tcp channel
-    pub fn close(&mut self){
+    pub fn close(&mut self) {
         if let Some(ref mut s) = self.stream {
             s.shutdown(Shutdown::Both).unwrap();
         };
     }
-
 }
 
 impl TAsyncIoChannel for TAsyncTcpChannel {

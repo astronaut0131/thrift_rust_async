@@ -1,11 +1,13 @@
-use super::{TAsyncReadTransport, TAsyncReadTransportFactory, TAsyncWriteTransport, TAsyncWriteTransportFactory};
-
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::cmp;
 use std::io;
-use async_trait::async_trait;
-use crate::transport::{AsyncRead, AsyncWrite};
 use std::io::Cursor;
+
+use async_trait::async_trait;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::transport::{AsyncRead, AsyncWrite};
+
+use super::{TAsyncReadTransport, TAsyncReadTransportFactory, TAsyncWriteTransport, TAsyncWriteTransportFactory};
 
 /// Default capacity of the read buffer in bytes.
 const READ_CAPACITY: usize = 4096;

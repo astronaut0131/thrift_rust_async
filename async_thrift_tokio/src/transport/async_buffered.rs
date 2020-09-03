@@ -1,7 +1,9 @@
-use super::{TAsyncReadTransport, TAsyncReadTransportFactory, TAsyncWriteTransport, TAsyncWriteTransportFactory, AsyncWrite, AsyncRead};
-use async_trait::async_trait;
 use std::cmp;
 use std::io;
+
+use async_trait::async_trait;
+
+use super::{AsyncRead, AsyncWrite, TAsyncReadTransport, TAsyncReadTransportFactory, TAsyncWriteTransport, TAsyncWriteTransportFactory};
 
 /// Default capacity of the read buffer in bytes.
 const READ_CAPACITY: usize = 1024;

@@ -1,18 +1,19 @@
-use crate::transport::{TAsyncReadTransport, TAsyncWriteTransport};
-use super::{TAsyncInputProtocolFactory, TAsyncOutputProtocolFactory, TAsyncInputProtocol, TAsyncOutputProtocol};
-use super::{
-    TListIdentifier, TMapIdentifier,
-    TMessageIdentifier, TMessageType,
-    TSetIdentifier, TStructIdentifier,
-    TType, TFieldIdentifier,
-};
-
-use crate::errors::{ProtocolErrorKind, ProtocolError, Error};
+use std::convert::{From, TryFrom};
 use std::io::Cursor;
+
 use async_trait::async_trait;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt, WriteBytesExt};
-use std::convert::{From, TryFrom};
 
+use crate::errors::{Error, ProtocolError, ProtocolErrorKind};
+use crate::transport::{TAsyncReadTransport, TAsyncWriteTransport};
+
+use super::{TAsyncInputProtocol, TAsyncInputProtocolFactory, TAsyncOutputProtocol, TAsyncOutputProtocolFactory};
+use super::{
+    TFieldIdentifier, TListIdentifier,
+    TMapIdentifier, TMessageIdentifier,
+    TMessageType, TSetIdentifier,
+    TStructIdentifier, TType,
+};
 
 const BINARY_PROTOCOL_VERSION_1: u32 = 0x80010000;
 

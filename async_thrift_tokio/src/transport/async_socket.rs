@@ -1,12 +1,14 @@
 use std::io;
-use crate::transport::{AsyncWrite, AsyncRead, AsyncReadHalf, AsyncWriteHalf, TAsyncIoChannel};
-use async_trait::async_trait;
 use std::io::ErrorKind;
+
+use async_trait::async_trait;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
+    tcp::{OwnedReadHalf, OwnedWriteHalf},
     TcpStream,
-    tcp::{OwnedReadHalf,OwnedWriteHalf}
 };
-use tokio::io::{AsyncReadExt,AsyncWriteExt};
+
+use crate::transport::{AsyncRead, AsyncReadHalf, AsyncWrite, AsyncWriteHalf, TAsyncIoChannel};
 
 #[derive(Debug, Default)]
 pub struct TAsyncTcpChannel {
@@ -25,12 +27,11 @@ impl TAsyncTcpChannel {
     }
 
     /// close a tcp channel
-    pub fn close(&mut self){
+    pub fn close(&mut self) {
         // if let Some(ref mut s) = self.stream {
         //     s.shutdown(Shutdown::Both).unwrap();
         // };
     }
-
 }
 
 
@@ -42,7 +43,7 @@ impl AsyncRead for OwnedReadHalf {
 }
 
 #[async_trait]
-impl AsyncWrite for OwnedWriteHalf{
+impl AsyncWrite for OwnedWriteHalf {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         tokio::io::AsyncWriteExt::write(self, buf).await
     }
@@ -58,7 +59,7 @@ impl TAsyncIoChannel for TAsyncTcpChannel {
             Self: Sized,
     {
         let mut channel = self.stream.take();
-        let (r_half,w_half) = channel.unwrap().into_split();
+        let (r_half, w_half) = channel.unwrap().into_split();
         let read_half = AsyncReadHalf::new(r_half);
         let write_half = AsyncWriteHalf::new(w_half);
         Result::Ok((read_half, write_half))

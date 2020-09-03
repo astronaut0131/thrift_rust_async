@@ -17,58 +17,61 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
+use async_trait::async_trait;
+
 use async_thrift::{ApplicationError, ApplicationErrorKind, ProtocolError, ProtocolErrorKind, TThriftClient};
-use async_thrift::protocol::{TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TAsyncInputProtocol, TAsyncOutputProtocol, TSetIdentifier, TStructIdentifier, TType};
+use async_thrift::OrderedFloat;
+use async_thrift::protocol::{TAsyncInputProtocol, TAsyncOutputProtocol, TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TSetIdentifier, TStructIdentifier, TType};
 use async_thrift::protocol::field_id;
 use async_thrift::protocol::verify_expected_message_type;
 use async_thrift::protocol::verify_expected_sequence_number;
 use async_thrift::protocol::verify_expected_service_call;
 use async_thrift::protocol::verify_required_field_exists;
-use async_trait::async_trait;
 use async_thrift::server::TAsyncProcessor;
-use async_thrift::OrderedFloat;
 
 /// Docstring!
 #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Numberz {
-  One = 1,
-  Two = 2,
-  Three = 3,
-  Five = 5,
-  Six = 6,
-  Eight = 8,
+    One = 1,
+    Two = 2,
+    Three = 3,
+    Five = 5,
+    Six = 6,
+    Eight = 8,
 }
 
 impl Numberz {
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol+Send)) -> async_thrift::Result<()> {
-    o_prot.write_i32(*self as i32).await
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut dyn TAsyncInputProtocol) -> async_thrift::Result<Numberz> {
-    let enum_value = i_prot.read_i32().await?;
-    Numberz::try_from(enum_value)  }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        o_prot.write_i32(*self as i32).await
+    }
+    pub async fn read_from_in_protocol(i_prot: &mut dyn TAsyncInputProtocol) -> async_thrift::Result<Numberz> {
+        let enum_value = i_prot.read_i32().await?;
+        Numberz::try_from(enum_value)
+    }
 }
 
 impl TryFrom<i32> for Numberz {
-  type Error = async_thrift::Error;  fn try_from(i: i32) -> Result<Self, Self::Error> {
-    match i {
-      1 => Ok(Numberz::One),
-      2 => Ok(Numberz::Two),
-      3 => Ok(Numberz::Three),
-      5 => Ok(Numberz::Five),
-      6 => Ok(Numberz::Six),
-      8 => Ok(Numberz::Eight),
-      _ => {
-        Err(
-          async_thrift::Error::Protocol(
-            ProtocolError::new(
-              ProtocolErrorKind::InvalidData,
-              format!("cannot convert enum constant {} to Numberz", i)
-            )
-          )
-        )
-      },
+    type Error = async_thrift::Error;
+    fn try_from(i: i32) -> Result<Self, Self::Error> {
+        match i {
+            1 => Ok(Numberz::One),
+            2 => Ok(Numberz::Two),
+            3 => Ok(Numberz::Three),
+            5 => Ok(Numberz::Five),
+            6 => Ok(Numberz::Six),
+            8 => Ok(Numberz::Eight),
+            _ => {
+                Err(
+                    async_thrift::Error::Protocol(
+                        ProtocolError::new(
+                            ProtocolErrorKind::InvalidData,
+                            format!("cannot convert enum constant {} to Numberz", i),
+                        )
+                    )
+                )
+            }
+        }
     }
-  }
 }
 
 pub type UserId = i64;
@@ -81,80 +84,80 @@ pub type MapType = BTreeMap<String, Bonk>;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Bonk {
-  pub message: Option<String>,
-  pub type_: Option<i32>,
+    pub message: Option<String>,
+    pub type_: Option<i32>,
 }
 
 impl Bonk {
-  pub fn new<F1, F2>(message: F1, type_: F2) -> Bonk where F1: Into<Option<String>>, F2: Into<Option<i32>> {
-    Bonk {
-      message: message.into(),
-      type_: type_.into(),
+    pub fn new<F1, F2>(message: F1, type_: F2) -> Bonk where F1: Into<Option<String>>, F2: Into<Option<i32>> {
+        Bonk {
+            message: message.into(),
+            type_: type_.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Bonk> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = Some("".to_owned());
-    let mut f_2: Option<i32> = Some(0);
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_i32().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Bonk> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = Some("".to_owned());
+        let mut f_2: Option<i32> = Some(0);
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_i32().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Bonk {
+            message: f_1,
+            type_: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Bonk {
-      message: f_1,
-      type_: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Bonk");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.message {
-      o_prot.write_field_begin(&TFieldIdentifier::new("message", TType::String, 1)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Bonk");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.message {
+            o_prot.write_field_begin(&TFieldIdentifier::new("message", TType::String, 1)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.type_ {
+            o_prot.write_field_begin(&TFieldIdentifier::new("type", TType::I32, 2)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(fld_var) = self.type_ {
-      o_prot.write_field_begin(&TFieldIdentifier::new("type", TType::I32, 2)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Bonk {
-  fn default() -> Self {
-    Bonk{
-      message: Some("".to_owned()),
-      type_: Some(0),
+    fn default() -> Self {
+        Bonk {
+            message: Some("".to_owned()),
+            type_: Some(0),
+        }
     }
-  }
 }
 
 //
@@ -163,80 +166,80 @@ impl Default for Bonk {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Bools {
-  pub im_true: Option<bool>,
-  pub im_false: Option<bool>,
+    pub im_true: Option<bool>,
+    pub im_false: Option<bool>,
 }
 
 impl Bools {
-  pub fn new<F1, F2>(im_true: F1, im_false: F2) -> Bools where F1: Into<Option<bool>>, F2: Into<Option<bool>> {
-    Bools {
-      im_true: im_true.into(),
-      im_false: im_false.into(),
+    pub fn new<F1, F2>(im_true: F1, im_false: F2) -> Bools where F1: Into<Option<bool>>, F2: Into<Option<bool>> {
+        Bools {
+            im_true: im_true.into(),
+            im_false: im_false.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Bools> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<bool> = Some(false);
-    let mut f_2: Option<bool> = Some(false);
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_bool().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_bool().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Bools> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<bool> = Some(false);
+        let mut f_2: Option<bool> = Some(false);
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_bool().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_bool().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Bools {
+            im_true: f_1,
+            im_false: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Bools {
-      im_true: f_1,
-      im_false: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Bools");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.im_true {
-      o_prot.write_field_begin(&TFieldIdentifier::new("im_true", TType::Bool, 1)).await?;
-      o_prot.write_bool(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Bools");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.im_true {
+            o_prot.write_field_begin(&TFieldIdentifier::new("im_true", TType::Bool, 1)).await?;
+            o_prot.write_bool(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.im_false {
+            o_prot.write_field_begin(&TFieldIdentifier::new("im_false", TType::Bool, 2)).await?;
+            o_prot.write_bool(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(fld_var) = self.im_false {
-      o_prot.write_field_begin(&TFieldIdentifier::new("im_false", TType::Bool, 2)).await?;
-      o_prot.write_bool(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Bools {
-  fn default() -> Self {
-    Bools{
-      im_true: Some(false),
-      im_false: Some(false),
+    fn default() -> Self {
+        Bools {
+            im_true: Some(false),
+            im_false: Some(false),
+        }
     }
-  }
 }
 
 //
@@ -245,114 +248,114 @@ impl Default for Bools {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Xtruct {
-  pub string_thing: Option<String>,
-  pub byte_thing: Option<i8>,
-  pub i32_thing: Option<i32>,
-  pub i64_thing: Option<i64>,
+    pub string_thing: Option<String>,
+    pub byte_thing: Option<i8>,
+    pub i32_thing: Option<i32>,
+    pub i64_thing: Option<i64>,
 }
 
 impl Xtruct {
-  pub fn new<F1, F4, F9, F11>(string_thing: F1, byte_thing: F4, i32_thing: F9, i64_thing: F11) -> Xtruct where F1: Into<Option<String>>, F4: Into<Option<i8>>, F9: Into<Option<i32>>, F11: Into<Option<i64>> {
-    Xtruct {
-      string_thing: string_thing.into(),
-      byte_thing: byte_thing.into(),
-      i32_thing: i32_thing.into(),
-      i64_thing: i64_thing.into(),
+    pub fn new<F1, F4, F9, F11>(string_thing: F1, byte_thing: F4, i32_thing: F9, i64_thing: F11) -> Xtruct where F1: Into<Option<String>>, F4: Into<Option<i8>>, F9: Into<Option<i32>>, F11: Into<Option<i64>> {
+        Xtruct {
+            string_thing: string_thing.into(),
+            byte_thing: byte_thing.into(),
+            i32_thing: i32_thing.into(),
+            i64_thing: i64_thing.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xtruct> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = Some("".to_owned());
-    let mut f_4: Option<i8> = Some(0);
-    let mut f_9: Option<i32> = Some(0);
-    let mut f_11: Option<i64> = Some(0);
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        4 => {
-          let val = i_prot.read_i8().await?;
-          f_4 = Some(val);
-        },
-        9 => {
-          let val = i_prot.read_i32().await?;
-          f_9 = Some(val);
-        },
-        11 => {
-          let val = i_prot.read_i64().await?;
-          f_11 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xtruct> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = Some("".to_owned());
+        let mut f_4: Option<i8> = Some(0);
+        let mut f_9: Option<i32> = Some(0);
+        let mut f_11: Option<i64> = Some(0);
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                4 => {
+                    let val = i_prot.read_i8().await?;
+                    f_4 = Some(val);
+                }
+                9 => {
+                    let val = i_prot.read_i32().await?;
+                    f_9 = Some(val);
+                }
+                11 => {
+                    let val = i_prot.read_i64().await?;
+                    f_11 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Xtruct {
+            string_thing: f_1,
+            byte_thing: f_4,
+            i32_thing: f_9,
+            i64_thing: f_11,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Xtruct {
-      string_thing: f_1,
-      byte_thing: f_4,
-      i32_thing: f_9,
-      i64_thing: f_11,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Xtruct");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.string_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Xtruct");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.string_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.byte_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("byte_thing", TType::I08, 4)).await?;
+            o_prot.write_i8(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.i32_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 9)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.i64_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("i64_thing", TType::I64, 11)).await?;
+            o_prot.write_i64(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(fld_var) = self.byte_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("byte_thing", TType::I08, 4)).await?;
-      o_prot.write_i8(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.i32_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 9)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.i64_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("i64_thing", TType::I64, 11)).await?;
-      o_prot.write_i64(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Xtruct {
-  fn default() -> Self {
-    Xtruct{
-      string_thing: Some("".to_owned()),
-      byte_thing: Some(0),
-      i32_thing: Some(0),
-      i64_thing: Some(0),
+    fn default() -> Self {
+        Xtruct {
+            string_thing: Some("".to_owned()),
+            byte_thing: Some(0),
+            i32_thing: Some(0),
+            i64_thing: Some(0),
+        }
     }
-  }
 }
 
 //
@@ -361,97 +364,97 @@ impl Default for Xtruct {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Xtruct2 {
-  pub byte_thing: Option<i8>,
-  pub struct_thing: Option<Xtruct>,
-  pub i32_thing: Option<i32>,
+    pub byte_thing: Option<i8>,
+    pub struct_thing: Option<Xtruct>,
+    pub i32_thing: Option<i32>,
 }
 
 impl Xtruct2 {
-  pub fn new<F1, F2, F3>(byte_thing: F1, struct_thing: F2, i32_thing: F3) -> Xtruct2 where F1: Into<Option<i8>>, F2: Into<Option<Xtruct>>, F3: Into<Option<i32>> {
-    Xtruct2 {
-      byte_thing: byte_thing.into(),
-      struct_thing: struct_thing.into(),
-      i32_thing: i32_thing.into(),
+    pub fn new<F1, F2, F3>(byte_thing: F1, struct_thing: F2, i32_thing: F3) -> Xtruct2 where F1: Into<Option<i8>>, F2: Into<Option<Xtruct>>, F3: Into<Option<i32>> {
+        Xtruct2 {
+            byte_thing: byte_thing.into(),
+            struct_thing: struct_thing.into(),
+            i32_thing: i32_thing.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xtruct2> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i8> = Some(0);
-    let mut f_2: Option<Xtruct> = None;
-    let mut f_3: Option<i32> = Some(0);
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i8().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = Xtruct::read_from_in_protocol(i_prot).await?;
-          f_2 = Some(val);
-        },
-        3 => {
-          let val = i_prot.read_i32().await?;
-          f_3 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xtruct2> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i8> = Some(0);
+        let mut f_2: Option<Xtruct> = None;
+        let mut f_3: Option<i32> = Some(0);
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i8().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = Xtruct::read_from_in_protocol(i_prot).await?;
+                    f_2 = Some(val);
+                }
+                3 => {
+                    let val = i_prot.read_i32().await?;
+                    f_3 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Xtruct2 {
+            byte_thing: f_1,
+            struct_thing: f_2,
+            i32_thing: f_3,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Xtruct2 {
-      byte_thing: f_1,
-      struct_thing: f_2,
-      i32_thing: f_3,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Xtruct2");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.byte_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("byte_thing", TType::I08, 1)).await?;
-      o_prot.write_i8(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Xtruct2");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.byte_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("byte_thing", TType::I08, 1)).await?;
+            o_prot.write_i8(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.struct_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("struct_thing", TType::Struct, 2)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.i32_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 3)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.struct_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("struct_thing", TType::Struct, 2)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.i32_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 3)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Xtruct2 {
-  fn default() -> Self {
-    Xtruct2{
-      byte_thing: Some(0),
-      struct_thing: None,
-      i32_thing: Some(0),
+    fn default() -> Self {
+        Xtruct2 {
+            byte_thing: Some(0),
+            struct_thing: None,
+            i32_thing: Some(0),
+        }
     }
-  }
 }
 
 //
@@ -460,114 +463,114 @@ impl Default for Xtruct2 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Xtruct3 {
-  pub string_thing: Option<String>,
-  pub changed: Option<i32>,
-  pub i32_thing: Option<i32>,
-  pub i64_thing: Option<i64>,
+    pub string_thing: Option<String>,
+    pub changed: Option<i32>,
+    pub i32_thing: Option<i32>,
+    pub i64_thing: Option<i64>,
 }
 
 impl Xtruct3 {
-  pub fn new<F1, F4, F9, F11>(string_thing: F1, changed: F4, i32_thing: F9, i64_thing: F11) -> Xtruct3 where F1: Into<Option<String>>, F4: Into<Option<i32>>, F9: Into<Option<i32>>, F11: Into<Option<i64>> {
-    Xtruct3 {
-      string_thing: string_thing.into(),
-      changed: changed.into(),
-      i32_thing: i32_thing.into(),
-      i64_thing: i64_thing.into(),
+    pub fn new<F1, F4, F9, F11>(string_thing: F1, changed: F4, i32_thing: F9, i64_thing: F11) -> Xtruct3 where F1: Into<Option<String>>, F4: Into<Option<i32>>, F9: Into<Option<i32>>, F11: Into<Option<i64>> {
+        Xtruct3 {
+            string_thing: string_thing.into(),
+            changed: changed.into(),
+            i32_thing: i32_thing.into(),
+            i64_thing: i64_thing.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xtruct3> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = Some("".to_owned());
-    let mut f_4: Option<i32> = Some(0);
-    let mut f_9: Option<i32> = Some(0);
-    let mut f_11: Option<i64> = Some(0);
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        4 => {
-          let val = i_prot.read_i32().await?;
-          f_4 = Some(val);
-        },
-        9 => {
-          let val = i_prot.read_i32().await?;
-          f_9 = Some(val);
-        },
-        11 => {
-          let val = i_prot.read_i64().await?;
-          f_11 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xtruct3> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = Some("".to_owned());
+        let mut f_4: Option<i32> = Some(0);
+        let mut f_9: Option<i32> = Some(0);
+        let mut f_11: Option<i64> = Some(0);
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                4 => {
+                    let val = i_prot.read_i32().await?;
+                    f_4 = Some(val);
+                }
+                9 => {
+                    let val = i_prot.read_i32().await?;
+                    f_9 = Some(val);
+                }
+                11 => {
+                    let val = i_prot.read_i64().await?;
+                    f_11 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Xtruct3 {
+            string_thing: f_1,
+            changed: f_4,
+            i32_thing: f_9,
+            i64_thing: f_11,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Xtruct3 {
-      string_thing: f_1,
-      changed: f_4,
-      i32_thing: f_9,
-      i64_thing: f_11,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Xtruct3");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.string_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Xtruct3");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.string_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.changed {
+            o_prot.write_field_begin(&TFieldIdentifier::new("changed", TType::I32, 4)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.i32_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 9)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.i64_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("i64_thing", TType::I64, 11)).await?;
+            o_prot.write_i64(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(fld_var) = self.changed {
-      o_prot.write_field_begin(&TFieldIdentifier::new("changed", TType::I32, 4)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.i32_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 9)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.i64_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("i64_thing", TType::I64, 11)).await?;
-      o_prot.write_i64(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Xtruct3 {
-  fn default() -> Self {
-    Xtruct3{
-      string_thing: Some("".to_owned()),
-      changed: Some(0),
-      i32_thing: Some(0),
-      i64_thing: Some(0),
+    fn default() -> Self {
+        Xtruct3 {
+            string_thing: Some("".to_owned()),
+            changed: Some(0),
+            i32_thing: Some(0),
+            i64_thing: Some(0),
+        }
     }
-  }
 }
 
 //
@@ -576,102 +579,102 @@ impl Default for Xtruct3 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Insanity {
-  pub user_map: Option<BTreeMap<Numberz, UserId>>,
-  pub xtructs: Option<Vec<Xtruct>>,
+    pub user_map: Option<BTreeMap<Numberz, UserId>>,
+    pub xtructs: Option<Vec<Xtruct>>,
 }
 
 impl Insanity {
-  pub fn new<F1, F2>(user_map: F1, xtructs: F2) -> Insanity where F1: Into<Option<BTreeMap<Numberz, UserId>>>, F2: Into<Option<Vec<Xtruct>>> {
-    Insanity {
-      user_map: user_map.into(),
-      xtructs: xtructs.into(),
+    pub fn new<F1, F2>(user_map: F1, xtructs: F2) -> Insanity where F1: Into<Option<BTreeMap<Numberz, UserId>>>, F2: Into<Option<Vec<Xtruct>>> {
+        Insanity {
+            user_map: user_map.into(),
+            xtructs: xtructs.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Insanity> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<BTreeMap<Numberz, UserId>> = Some(BTreeMap::new());
-    let mut f_2: Option<Vec<Xtruct>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<Numberz, UserId> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_0 = Numberz::read_from_in_protocol(i_prot).await?;
-            let map_val_1 = i_prot.read_i64().await?;
-            val.insert(map_key_0, map_val_1);
-          }
-          i_prot.read_map_end().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<Xtruct> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_2 = Xtruct::read_from_in_protocol(i_prot).await?;
-            val.push(list_elem_2);
-          }
-          i_prot.read_list_end().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Insanity> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<BTreeMap<Numberz, UserId>> = Some(BTreeMap::new());
+        let mut f_2: Option<Vec<Xtruct>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<Numberz, UserId> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_0 = Numberz::read_from_in_protocol(i_prot).await?;
+                        let map_val_1 = i_prot.read_i64().await?;
+                        val.insert(map_key_0, map_val_1);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<Xtruct> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_2 = Xtruct::read_from_in_protocol(i_prot).await?;
+                        val.push(list_elem_2);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Insanity {
+            user_map: f_1,
+            xtructs: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Insanity {
-      user_map: f_1,
-      xtructs: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Insanity");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.user_map {
-      o_prot.write_field_begin(&TFieldIdentifier::new("userMap", TType::Map, 1)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I64, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        k.write_to_out_protocol(o_prot).await?;
-        o_prot.write_i64(*v).await?;
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Insanity");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.user_map {
+            o_prot.write_field_begin(&TFieldIdentifier::new("userMap", TType::Map, 1)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I64, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                k.write_to_out_protocol(o_prot).await?;
+                o_prot.write_i64(*v).await?;
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.xtructs {
+            o_prot.write_field_begin(&TFieldIdentifier::new("xtructs", TType::List, 2)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::Struct, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                e.write_to_out_protocol(o_prot).await?;
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.xtructs {
-      o_prot.write_field_begin(&TFieldIdentifier::new("xtructs", TType::List, 2)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::Struct, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        e.write_to_out_protocol(o_prot).await?;
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Insanity {
-  fn default() -> Self {
-    Insanity{
-      user_map: Some(BTreeMap::new()),
-      xtructs: Some(Vec::new()),
+    fn default() -> Self {
+        Insanity {
+            user_map: Some(BTreeMap::new()),
+            xtructs: Some(Vec::new()),
+        }
     }
-  }
 }
 
 //
@@ -680,185 +683,185 @@ impl Default for Insanity {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CrazyNesting {
-  pub string_field: Option<String>,
-  pub set_field: Option<BTreeSet<Insanity>>,
-  pub list_field: Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>>,
-  pub binary_field: Option<Vec<u8>>,
+    pub string_field: Option<String>,
+    pub set_field: Option<BTreeSet<Insanity>>,
+    pub list_field: Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>>,
+    pub binary_field: Option<Vec<u8>>,
 }
 
 impl CrazyNesting {
-  pub fn new<F1, F2, F4>(string_field: F1, set_field: F2, list_field: Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>>, binary_field: F4) -> CrazyNesting where F1: Into<Option<String>>, F2: Into<Option<BTreeSet<Insanity>>>, F4: Into<Option<Vec<u8>>> {
-    CrazyNesting {
-      string_field: string_field.into(),
-      set_field: set_field.into(),
-      list_field: list_field,
-      binary_field: binary_field.into(),
+    pub fn new<F1, F2, F4>(string_field: F1, set_field: F2, list_field: Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>>, binary_field: F4) -> CrazyNesting where F1: Into<Option<String>>, F2: Into<Option<BTreeSet<Insanity>>>, F4: Into<Option<Vec<u8>>> {
+        CrazyNesting {
+            string_field: string_field.into(),
+            set_field: set_field.into(),
+            list_field: list_field,
+            binary_field: binary_field.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<CrazyNesting> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = Some("".to_owned());
-    let mut f_2: Option<BTreeSet<Insanity>> = None;
-    let mut f_3: Option<Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>>> = None;
-    let mut f_4: Option<Vec<u8>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let set_ident = i_prot.read_set_begin().await?;
-          let mut val: BTreeSet<Insanity> = BTreeSet::new();
-          for _ in 0..set_ident.size {
-            let set_elem_3 = Insanity::read_from_in_protocol(i_prot).await?;
-            val.insert(set_elem_3);
-          }
-          i_prot.read_set_end().await?;
-          f_2 = Some(val);
-        },
-        3 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let map_ident = i_prot.read_map_begin().await?;
-            let mut list_elem_4: BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>> = BTreeMap::new();
-            for _ in 0..map_ident.size {
-              let set_ident = i_prot.read_set_begin().await?;
-              let mut map_key_5: BTreeSet<i32> = BTreeSet::new();
-              for _ in 0..set_ident.size {
-                let set_elem_6 = i_prot.read_i32().await?;
-                map_key_5.insert(set_elem_6);
-              }
-              i_prot.read_set_end().await?;
-              let map_ident = i_prot.read_map_begin().await?;
-              let mut map_val_7: BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>> = BTreeMap::new();
-              for _ in 0..map_ident.size {
-                let map_key_8 = i_prot.read_i32().await?;
-                let set_ident = i_prot.read_set_begin().await?;
-                let mut map_val_9: BTreeSet<Vec<BTreeMap<Insanity, String>>> = BTreeSet::new();
-                for _ in 0..set_ident.size {
-                  let list_ident = i_prot.read_list_begin().await?;
-                  let mut set_elem_10: Vec<BTreeMap<Insanity, String>> = Vec::with_capacity(list_ident.size as usize);
-                  for _ in 0..list_ident.size {
-                    let map_ident = i_prot.read_map_begin().await?;
-                    let mut list_elem_11: BTreeMap<Insanity, String> = BTreeMap::new();
-                    for _ in 0..map_ident.size {
-                      let map_key_12 = Insanity::read_from_in_protocol(i_prot).await?;
-                      let map_val_13 = i_prot.read_string().await?;
-                      list_elem_11.insert(map_key_12, map_val_13);
-                    }
-                    i_prot.read_map_end().await?;
-                    set_elem_10.push(list_elem_11);
-                  }
-                  i_prot.read_list_end().await?;
-                  map_val_9.insert(set_elem_10);
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<CrazyNesting> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = Some("".to_owned());
+        let mut f_2: Option<BTreeSet<Insanity>> = None;
+        let mut f_3: Option<Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>>> = None;
+        let mut f_4: Option<Vec<u8>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
                 }
-                i_prot.read_set_end().await?;
-                map_val_7.insert(map_key_8, map_val_9);
-              }
-              i_prot.read_map_end().await?;
-              list_elem_4.insert(map_key_5, map_val_7);
-            }
-            i_prot.read_map_end().await?;
-            val.push(list_elem_4);
-          }
-          i_prot.read_list_end().await?;
-          f_3 = Some(val);
-        },
-        4 => {
-          let val = i_prot.read_bytes().await?;
-          f_4 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("CrazyNesting.list_field", &f_3)?;
-    let ret = CrazyNesting {
-      string_field: f_1,
-      set_field: f_2,
-      list_field: f_3.expect("auto-generated code should have checked for presence of required fields"),
-      binary_field: f_4,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("CrazyNesting");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.string_field {
-      o_prot.write_field_begin(&TFieldIdentifier::new("string_field", TType::String, 1)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.set_field {
-      o_prot.write_field_begin(&TFieldIdentifier::new("set_field", TType::Set, 2)).await?;
-      o_prot.write_set_begin(&TSetIdentifier::new(TType::Struct, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        e.write_to_out_protocol(o_prot).await?;
-        o_prot.write_set_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_begin(&TFieldIdentifier::new("list_field", TType::List, 3)).await?;
-    o_prot.write_list_begin(&TListIdentifier::new(TType::Map, self.list_field.len() as i32)).await?;
-    for e in &self.list_field {
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::Set, TType::Map, e.len() as i32)).await?;
-      for (k, v) in e {
-        o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, k.len() as i32)).await?;
-        for e in k {
-          o_prot.write_i32(*e).await?;
-          o_prot.write_set_end().await?;
+                2 => {
+                    let set_ident = i_prot.read_set_begin().await?;
+                    let mut val: BTreeSet<Insanity> = BTreeSet::new();
+                    for _ in 0..set_ident.size {
+                        let set_elem_3 = Insanity::read_from_in_protocol(i_prot).await?;
+                        val.insert(set_elem_3);
+                    }
+                    i_prot.read_set_end().await?;
+                    f_2 = Some(val);
+                }
+                3 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>>> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let map_ident = i_prot.read_map_begin().await?;
+                        let mut list_elem_4: BTreeMap<BTreeSet<i32>, BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>>> = BTreeMap::new();
+                        for _ in 0..map_ident.size {
+                            let set_ident = i_prot.read_set_begin().await?;
+                            let mut map_key_5: BTreeSet<i32> = BTreeSet::new();
+                            for _ in 0..set_ident.size {
+                                let set_elem_6 = i_prot.read_i32().await?;
+                                map_key_5.insert(set_elem_6);
+                            }
+                            i_prot.read_set_end().await?;
+                            let map_ident = i_prot.read_map_begin().await?;
+                            let mut map_val_7: BTreeMap<i32, BTreeSet<Vec<BTreeMap<Insanity, String>>>> = BTreeMap::new();
+                            for _ in 0..map_ident.size {
+                                let map_key_8 = i_prot.read_i32().await?;
+                                let set_ident = i_prot.read_set_begin().await?;
+                                let mut map_val_9: BTreeSet<Vec<BTreeMap<Insanity, String>>> = BTreeSet::new();
+                                for _ in 0..set_ident.size {
+                                    let list_ident = i_prot.read_list_begin().await?;
+                                    let mut set_elem_10: Vec<BTreeMap<Insanity, String>> = Vec::with_capacity(list_ident.size as usize);
+                                    for _ in 0..list_ident.size {
+                                        let map_ident = i_prot.read_map_begin().await?;
+                                        let mut list_elem_11: BTreeMap<Insanity, String> = BTreeMap::new();
+                                        for _ in 0..map_ident.size {
+                                            let map_key_12 = Insanity::read_from_in_protocol(i_prot).await?;
+                                            let map_val_13 = i_prot.read_string().await?;
+                                            list_elem_11.insert(map_key_12, map_val_13);
+                                        }
+                                        i_prot.read_map_end().await?;
+                                        set_elem_10.push(list_elem_11);
+                                    }
+                                    i_prot.read_list_end().await?;
+                                    map_val_9.insert(set_elem_10);
+                                }
+                                i_prot.read_set_end().await?;
+                                map_val_7.insert(map_key_8, map_val_9);
+                            }
+                            i_prot.read_map_end().await?;
+                            list_elem_4.insert(map_key_5, map_val_7);
+                        }
+                        i_prot.read_map_end().await?;
+                        val.push(list_elem_4);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_3 = Some(val);
+                }
+                4 => {
+                    let val = i_prot.read_bytes().await?;
+                    f_4 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
         }
-        o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Set, v.len() as i32)).await?;
-        for (k, v) in v {
-          o_prot.write_i32(*k).await?;
-          o_prot.write_set_begin(&TSetIdentifier::new(TType::List, v.len() as i32)).await?;
-          for e in v {
-            o_prot.write_list_begin(&TListIdentifier::new(TType::Map, e.len() as i32)).await?;
-            for e in e {
-              o_prot.write_map_begin(&TMapIdentifier::new(TType::Struct, TType::String, e.len() as i32)).await?;
-              for (k, v) in e {
-                k.write_to_out_protocol(o_prot).await?;
-                o_prot.write_string(v).await?;
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("CrazyNesting.list_field", &f_3)?;
+        let ret = CrazyNesting {
+            string_field: f_1,
+            set_field: f_2,
+            list_field: f_3.expect("auto-generated code should have checked for presence of required fields"),
+            binary_field: f_4,
+        };
+        Ok(ret)
+    }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("CrazyNesting");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.string_field {
+            o_prot.write_field_begin(&TFieldIdentifier::new("string_field", TType::String, 1)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.set_field {
+            o_prot.write_field_begin(&TFieldIdentifier::new("set_field", TType::Set, 2)).await?;
+            o_prot.write_set_begin(&TSetIdentifier::new(TType::Struct, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                e.write_to_out_protocol(o_prot).await?;
+                o_prot.write_set_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_begin(&TFieldIdentifier::new("list_field", TType::List, 3)).await?;
+        o_prot.write_list_begin(&TListIdentifier::new(TType::Map, self.list_field.len() as i32)).await?;
+        for e in &self.list_field {
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::Set, TType::Map, e.len() as i32)).await?;
+            for (k, v) in e {
+                o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, k.len() as i32)).await?;
+                for e in k {
+                    o_prot.write_i32(*e).await?;
+                    o_prot.write_set_end().await?;
+                }
+                o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Set, v.len() as i32)).await?;
+                for (k, v) in v {
+                    o_prot.write_i32(*k).await?;
+                    o_prot.write_set_begin(&TSetIdentifier::new(TType::List, v.len() as i32)).await?;
+                    for e in v {
+                        o_prot.write_list_begin(&TListIdentifier::new(TType::Map, e.len() as i32)).await?;
+                        for e in e {
+                            o_prot.write_map_begin(&TMapIdentifier::new(TType::Struct, TType::String, e.len() as i32)).await?;
+                            for (k, v) in e {
+                                k.write_to_out_protocol(o_prot).await?;
+                                o_prot.write_string(v).await?;
+                                o_prot.write_map_end().await?;
+                            }
+                            o_prot.write_list_end().await?;
+                        }
+                        o_prot.write_set_end().await?;
+                    }
+                    o_prot.write_map_end().await?;
+                }
                 o_prot.write_map_end().await?;
-              }
-              o_prot.write_list_end().await?;
             }
-            o_prot.write_set_end().await?;
-          }
-          o_prot.write_map_end().await?;
+            o_prot.write_list_end().await?;
         }
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_list_end().await?;
+        o_prot.write_field_end().await?;
+        if let Some(ref fld_var) = self.binary_field {
+            o_prot.write_field_begin(&TFieldIdentifier::new("binary_field", TType::String, 4)).await?;
+            o_prot.write_bytes(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_end().await?;
-    if let Some(ref fld_var) = self.binary_field {
-      o_prot.write_field_begin(&TFieldIdentifier::new("binary_field", TType::String, 4)).await?;
-      o_prot.write_bytes(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 //
@@ -867,135 +870,135 @@ impl CrazyNesting {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum SomeUnion {
-  MapThing(BTreeMap<Numberz, UserId>),
-  StringThing(String),
-  I32Thing(i32),
-  XtructThing(Xtruct3),
-  InsanityThing(Insanity),
+    MapThing(BTreeMap<Numberz, UserId>),
+    StringThing(String),
+    I32Thing(i32),
+    XtructThing(Xtruct3),
+    InsanityThing(Insanity),
 }
 
 impl SomeUnion {
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<SomeUnion> {
-    let mut ret: Option<SomeUnion> = None;
-    let mut received_field_count = 0;
-    i_prot.read_struct_begin().await?;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<Numberz, UserId> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_14 = Numberz::read_from_in_protocol(i_prot).await?;
-            let map_val_15 = i_prot.read_i64().await?;
-            val.insert(map_key_14, map_val_15);
-          }
-          i_prot.read_map_end().await?;
-          if ret.is_none() {
-            ret = Some(SomeUnion::MapThing(val));
-          }
-          received_field_count += 1;
-        },
-        2 => {
-          let val = i_prot.read_string().await?;
-          if ret.is_none() {
-            ret = Some(SomeUnion::StringThing(val));
-          }
-          received_field_count += 1;
-        },
-        3 => {
-          let val = i_prot.read_i32().await?;
-          if ret.is_none() {
-            ret = Some(SomeUnion::I32Thing(val));
-          }
-          received_field_count += 1;
-        },
-        4 => {
-          let val = Xtruct3::read_from_in_protocol(i_prot).await?;
-          if ret.is_none() {
-            ret = Some(SomeUnion::XtructThing(val));
-          }
-          received_field_count += 1;
-        },
-        5 => {
-          let val = Insanity::read_from_in_protocol(i_prot).await?;
-          if ret.is_none() {
-            ret = Some(SomeUnion::InsanityThing(val));
-          }
-          received_field_count += 1;
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-          received_field_count += 1;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    if received_field_count == 0 {
-      Err(
-        async_thrift::Error::Protocol(
-          ProtocolError::new(
-            ProtocolErrorKind::InvalidData,
-            "received empty union from remote SomeUnion"
-          )
-        )
-      )
-    } else if received_field_count > 1 {
-      Err(
-        async_thrift::Error::Protocol(
-          ProtocolError::new(
-            ProtocolErrorKind::InvalidData,
-            "received multiple fields for union from remote SomeUnion"
-          )
-        )
-      )
-    } else {
-      Ok(ret.expect("return value should have been constructed"))
-    }
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol+Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("SomeUnion");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    match *self {
-      SomeUnion::MapThing(ref f) => {
-        o_prot.write_field_begin(&TFieldIdentifier::new("map_thing", TType::Map, 1)).await?;
-        o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I64, f.len() as i32)).await?;
-        for (k, v) in f {
-          k.write_to_out_protocol(o_prot).await?;
-          o_prot.write_i64(*v).await?;
-          o_prot.write_map_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<SomeUnion> {
+        let mut ret: Option<SomeUnion> = None;
+        let mut received_field_count = 0;
+        i_prot.read_struct_begin().await?;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<Numberz, UserId> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_14 = Numberz::read_from_in_protocol(i_prot).await?;
+                        let map_val_15 = i_prot.read_i64().await?;
+                        val.insert(map_key_14, map_val_15);
+                    }
+                    i_prot.read_map_end().await?;
+                    if ret.is_none() {
+                        ret = Some(SomeUnion::MapThing(val));
+                    }
+                    received_field_count += 1;
+                }
+                2 => {
+                    let val = i_prot.read_string().await?;
+                    if ret.is_none() {
+                        ret = Some(SomeUnion::StringThing(val));
+                    }
+                    received_field_count += 1;
+                }
+                3 => {
+                    let val = i_prot.read_i32().await?;
+                    if ret.is_none() {
+                        ret = Some(SomeUnion::I32Thing(val));
+                    }
+                    received_field_count += 1;
+                }
+                4 => {
+                    let val = Xtruct3::read_from_in_protocol(i_prot).await?;
+                    if ret.is_none() {
+                        ret = Some(SomeUnion::XtructThing(val));
+                    }
+                    received_field_count += 1;
+                }
+                5 => {
+                    let val = Insanity::read_from_in_protocol(i_prot).await?;
+                    if ret.is_none() {
+                        ret = Some(SomeUnion::InsanityThing(val));
+                    }
+                    received_field_count += 1;
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                    received_field_count += 1;
+                }
+            };
+            i_prot.read_field_end().await?;
         }
-        o_prot.write_field_end().await?;
-      },
-      SomeUnion::StringThing(ref f) => {
-        o_prot.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 2)).await?;
-        o_prot.write_string(f).await?;
-        o_prot.write_field_end().await?;
-      },
-      SomeUnion::I32Thing(f) => {
-        o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 3)).await?;
-        o_prot.write_i32(f).await?;
-        o_prot.write_field_end().await?;
-      },
-      SomeUnion::XtructThing(ref f) => {
-        o_prot.write_field_begin(&TFieldIdentifier::new("xtruct_thing", TType::Struct, 4)).await?;
-        f.write_to_out_protocol(o_prot).await?;
-        o_prot.write_field_end().await?;
-      },
-      SomeUnion::InsanityThing(ref f) => {
-        o_prot.write_field_begin(&TFieldIdentifier::new("insanity_thing", TType::Struct, 5)).await?;
-        f.write_to_out_protocol(o_prot).await?;
-        o_prot.write_field_end().await?;
-      },
+        i_prot.read_struct_end().await?;
+        if received_field_count == 0 {
+            Err(
+                async_thrift::Error::Protocol(
+                    ProtocolError::new(
+                        ProtocolErrorKind::InvalidData,
+                        "received empty union from remote SomeUnion",
+                    )
+                )
+            )
+        } else if received_field_count > 1 {
+            Err(
+                async_thrift::Error::Protocol(
+                    ProtocolError::new(
+                        ProtocolErrorKind::InvalidData,
+                        "received multiple fields for union from remote SomeUnion",
+                    )
+                )
+            )
+        } else {
+            Ok(ret.expect("return value should have been constructed"))
+        }
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("SomeUnion");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        match *self {
+            SomeUnion::MapThing(ref f) => {
+                o_prot.write_field_begin(&TFieldIdentifier::new("map_thing", TType::Map, 1)).await?;
+                o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I64, f.len() as i32)).await?;
+                for (k, v) in f {
+                    k.write_to_out_protocol(o_prot).await?;
+                    o_prot.write_i64(*v).await?;
+                    o_prot.write_map_end().await?;
+                }
+                o_prot.write_field_end().await?;
+            }
+            SomeUnion::StringThing(ref f) => {
+                o_prot.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 2)).await?;
+                o_prot.write_string(f).await?;
+                o_prot.write_field_end().await?;
+            }
+            SomeUnion::I32Thing(f) => {
+                o_prot.write_field_begin(&TFieldIdentifier::new("i32_thing", TType::I32, 3)).await?;
+                o_prot.write_i32(f).await?;
+                o_prot.write_field_end().await?;
+            }
+            SomeUnion::XtructThing(ref f) => {
+                o_prot.write_field_begin(&TFieldIdentifier::new("xtruct_thing", TType::Struct, 4)).await?;
+                f.write_to_out_protocol(o_prot).await?;
+                o_prot.write_field_end().await?;
+            }
+            SomeUnion::InsanityThing(ref f) => {
+                o_prot.write_field_begin(&TFieldIdentifier::new("insanity_thing", TType::Struct, 5)).await?;
+                f.write_to_out_protocol(o_prot).await?;
+                o_prot.write_field_end().await?;
+            }
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -1004,98 +1007,98 @@ impl SomeUnion {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Xception {
-  pub error_code: Option<i32>,
-  pub message: Option<String>,
+    pub error_code: Option<i32>,
+    pub message: Option<String>,
 }
 
 impl Xception {
-  pub fn new<F1, F2>(error_code: F1, message: F2) -> Xception where F1: Into<Option<i32>>, F2: Into<Option<String>> {
-    Xception {
-      error_code: error_code.into(),
-      message: message.into(),
+    pub fn new<F1, F2>(error_code: F1, message: F2) -> Xception where F1: Into<Option<i32>>, F2: Into<Option<String>> {
+        Xception {
+            error_code: error_code.into(),
+            message: message.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xception> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = Some(0);
-    let mut f_2: Option<String> = Some("".to_owned());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_string().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xception> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i32> = Some(0);
+        let mut f_2: Option<String> = Some("".to_owned());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i32().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_string().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Xception {
+            error_code: f_1,
+            message: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Xception {
-      error_code: f_1,
-      message: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Xception");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.error_code {
-      o_prot.write_field_begin(&TFieldIdentifier::new("errorCode", TType::I32, 1)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Xception");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.error_code {
+            o_prot.write_field_begin(&TFieldIdentifier::new("errorCode", TType::I32, 1)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.message {
+            o_prot.write_field_begin(&TFieldIdentifier::new("message", TType::String, 2)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.message {
-      o_prot.write_field_begin(&TFieldIdentifier::new("message", TType::String, 2)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Xception {
-  fn default() -> Self {
-    Xception{
-      error_code: Some(0),
-      message: Some("".to_owned()),
+    fn default() -> Self {
+        Xception {
+            error_code: Some(0),
+            message: Some("".to_owned()),
+        }
     }
-  }
 }
 
 impl Error for Xception {
-  fn description(&self) -> &str {
-    "remote service threw Xception"
-  }
+    fn description(&self) -> &str {
+        "remote service threw Xception"
+    }
 }
 
 impl From<Xception> for async_thrift::Error {
-  fn from(e: Xception) -> Self {
-    async_thrift::Error::User(Box::new(e))
-  }
+    fn from(e: Xception) -> Self {
+        async_thrift::Error::User(Box::new(e))
+    }
 }
 
 impl Display for Xception {
-  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-    self.description().fmt(f)
-  }
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
 }
 
 //
@@ -1104,98 +1107,98 @@ impl Display for Xception {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Xception2 {
-  pub error_code: Option<i32>,
-  pub struct_thing: Option<Xtruct>,
+    pub error_code: Option<i32>,
+    pub struct_thing: Option<Xtruct>,
 }
 
 impl Xception2 {
-  pub fn new<F1, F2>(error_code: F1, struct_thing: F2) -> Xception2 where F1: Into<Option<i32>>, F2: Into<Option<Xtruct>> {
-    Xception2 {
-      error_code: error_code.into(),
-      struct_thing: struct_thing.into(),
+    pub fn new<F1, F2>(error_code: F1, struct_thing: F2) -> Xception2 where F1: Into<Option<i32>>, F2: Into<Option<Xtruct>> {
+        Xception2 {
+            error_code: error_code.into(),
+            struct_thing: struct_thing.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xception2> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = Some(0);
-    let mut f_2: Option<Xtruct> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = Xtruct::read_from_in_protocol(i_prot).await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<Xception2> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i32> = Some(0);
+        let mut f_2: Option<Xtruct> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i32().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = Xtruct::read_from_in_protocol(i_prot).await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = Xception2 {
+            error_code: f_1,
+            struct_thing: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = Xception2 {
-      error_code: f_1,
-      struct_thing: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("Xception2");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.error_code {
-      o_prot.write_field_begin(&TFieldIdentifier::new("errorCode", TType::I32, 1)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("Xception2");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.error_code {
+            o_prot.write_field_begin(&TFieldIdentifier::new("errorCode", TType::I32, 1)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.struct_thing {
+            o_prot.write_field_begin(&TFieldIdentifier::new("struct_thing", TType::Struct, 2)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.struct_thing {
-      o_prot.write_field_begin(&TFieldIdentifier::new("struct_thing", TType::Struct, 2)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for Xception2 {
-  fn default() -> Self {
-    Xception2{
-      error_code: Some(0),
-      struct_thing: None,
+    fn default() -> Self {
+        Xception2 {
+            error_code: Some(0),
+            struct_thing: None,
+        }
     }
-  }
 }
 
 impl Error for Xception2 {
-  fn description(&self) -> &str {
-    "remote service threw Xception2"
-  }
+    fn description(&self) -> &str {
+        "remote service threw Xception2"
+    }
 }
 
 impl From<Xception2> for async_thrift::Error {
-  fn from(e: Xception2) -> Self {
-    async_thrift::Error::User(Box::new(e))
-  }
+    fn from(e: Xception2) -> Self {
+        async_thrift::Error::User(Box::new(e))
+    }
 }
 
 impl Display for Xception2 {
-  fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-    self.description().fmt(f)
-  }
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
 }
 
 //
@@ -1203,44 +1206,43 @@ impl Display for Xception2 {
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct EmptyStruct {
-}
+pub struct EmptyStruct {}
 
 impl EmptyStruct {
-  pub fn new() -> EmptyStruct {
-    EmptyStruct {}
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<EmptyStruct> {
-    i_prot.read_struct_begin().await?;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub fn new() -> EmptyStruct {
+        EmptyStruct {}
     }
-    i_prot.read_struct_end().await?;
-    let ret = EmptyStruct {};
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("EmptyStruct");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<EmptyStruct> {
+        i_prot.read_struct_begin().await?;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = EmptyStruct {};
+        Ok(ret)
+    }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("EmptyStruct");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 impl Default for EmptyStruct {
-  fn default() -> Self {
-    EmptyStruct{}
-  }
+    fn default() -> Self {
+        EmptyStruct {}
+    }
 }
 
 //
@@ -1249,63 +1251,63 @@ impl Default for EmptyStruct {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct OneField {
-  pub field: Option<EmptyStruct>,
+    pub field: Option<EmptyStruct>,
 }
 
 impl OneField {
-  pub fn new<F1>(field: F1) -> OneField where F1: Into<Option<EmptyStruct>> {
-    OneField {
-      field: field.into(),
+    pub fn new<F1>(field: F1) -> OneField where F1: Into<Option<EmptyStruct>> {
+        OneField {
+            field: field.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<OneField> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<EmptyStruct> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = EmptyStruct::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<OneField> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<EmptyStruct> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = EmptyStruct::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = OneField {
+            field: f_1,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = OneField {
-      field: f_1,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("OneField");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.field {
-      o_prot.write_field_begin(&TFieldIdentifier::new("field", TType::Struct, 1)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("OneField");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.field {
+            o_prot.write_field_begin(&TFieldIdentifier::new("field", TType::Struct, 1)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for OneField {
-  fn default() -> Self {
-    OneField{
-      field: None,
+    fn default() -> Self {
+        OneField {
+            field: None,
+        }
     }
-  }
 }
 
 //
@@ -1314,97 +1316,97 @@ impl Default for OneField {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct VersioningTestV1 {
-  pub begin_in_both: Option<i32>,
-  pub old_string: Option<String>,
-  pub end_in_both: Option<i32>,
+    pub begin_in_both: Option<i32>,
+    pub old_string: Option<String>,
+    pub end_in_both: Option<i32>,
 }
 
 impl VersioningTestV1 {
-  pub fn new<F1, F3, F12>(begin_in_both: F1, old_string: F3, end_in_both: F12) -> VersioningTestV1 where F1: Into<Option<i32>>, F3: Into<Option<String>>, F12: Into<Option<i32>> {
-    VersioningTestV1 {
-      begin_in_both: begin_in_both.into(),
-      old_string: old_string.into(),
-      end_in_both: end_in_both.into(),
+    pub fn new<F1, F3, F12>(begin_in_both: F1, old_string: F3, end_in_both: F12) -> VersioningTestV1 where F1: Into<Option<i32>>, F3: Into<Option<String>>, F12: Into<Option<i32>> {
+        VersioningTestV1 {
+            begin_in_both: begin_in_both.into(),
+            old_string: old_string.into(),
+            end_in_both: end_in_both.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<VersioningTestV1> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = Some(0);
-    let mut f_3: Option<String> = Some("".to_owned());
-    let mut f_12: Option<i32> = Some(0);
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        3 => {
-          let val = i_prot.read_string().await?;
-          f_3 = Some(val);
-        },
-        12 => {
-          let val = i_prot.read_i32().await?;
-          f_12 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<VersioningTestV1> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i32> = Some(0);
+        let mut f_3: Option<String> = Some("".to_owned());
+        let mut f_12: Option<i32> = Some(0);
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i32().await?;
+                    f_1 = Some(val);
+                }
+                3 => {
+                    let val = i_prot.read_string().await?;
+                    f_3 = Some(val);
+                }
+                12 => {
+                    let val = i_prot.read_i32().await?;
+                    f_12 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = VersioningTestV1 {
+            begin_in_both: f_1,
+            old_string: f_3,
+            end_in_both: f_12,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = VersioningTestV1 {
-      begin_in_both: f_1,
-      old_string: f_3,
-      end_in_both: f_12,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("VersioningTestV1");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.begin_in_both {
-      o_prot.write_field_begin(&TFieldIdentifier::new("begin_in_both", TType::I32, 1)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("VersioningTestV1");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.begin_in_both {
+            o_prot.write_field_begin(&TFieldIdentifier::new("begin_in_both", TType::I32, 1)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.old_string {
+            o_prot.write_field_begin(&TFieldIdentifier::new("old_string", TType::String, 3)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.end_in_both {
+            o_prot.write_field_begin(&TFieldIdentifier::new("end_in_both", TType::I32, 12)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.old_string {
-      o_prot.write_field_begin(&TFieldIdentifier::new("old_string", TType::String, 3)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.end_in_both {
-      o_prot.write_field_begin(&TFieldIdentifier::new("end_in_both", TType::I32, 12)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for VersioningTestV1 {
-  fn default() -> Self {
-    VersioningTestV1{
-      begin_in_both: Some(0),
-      old_string: Some("".to_owned()),
-      end_in_both: Some(0),
+    fn default() -> Self {
+        VersioningTestV1 {
+            begin_in_both: Some(0),
+            old_string: Some("".to_owned()),
+            end_in_both: Some(0),
+        }
     }
-  }
 }
 
 //
@@ -1413,282 +1415,282 @@ impl Default for VersioningTestV1 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct VersioningTestV2 {
-  pub begin_in_both: Option<i32>,
-  pub newint: Option<i32>,
-  pub newbyte: Option<i8>,
-  pub newshort: Option<i16>,
-  pub newlong: Option<i64>,
-  pub newdouble: Option<OrderedFloat<f64>>,
-  pub newstruct: Option<Bonk>,
-  pub newlist: Option<Vec<i32>>,
-  pub newset: Option<BTreeSet<i32>>,
-  pub newmap: Option<BTreeMap<i32, i32>>,
-  pub newstring: Option<String>,
-  pub end_in_both: Option<i32>,
+    pub begin_in_both: Option<i32>,
+    pub newint: Option<i32>,
+    pub newbyte: Option<i8>,
+    pub newshort: Option<i16>,
+    pub newlong: Option<i64>,
+    pub newdouble: Option<OrderedFloat<f64>>,
+    pub newstruct: Option<Bonk>,
+    pub newlist: Option<Vec<i32>>,
+    pub newset: Option<BTreeSet<i32>>,
+    pub newmap: Option<BTreeMap<i32, i32>>,
+    pub newstring: Option<String>,
+    pub end_in_both: Option<i32>,
 }
 
 impl VersioningTestV2 {
-  pub fn new<F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12>(begin_in_both: F1, newint: F2, newbyte: F3, newshort: F4, newlong: F5, newdouble: F6, newstruct: F7, newlist: F8, newset: F9, newmap: F10, newstring: F11, end_in_both: F12) -> VersioningTestV2 where F1: Into<Option<i32>>, F2: Into<Option<i32>>, F3: Into<Option<i8>>, F4: Into<Option<i16>>, F5: Into<Option<i64>>, F6: Into<Option<OrderedFloat<f64>>>, F7: Into<Option<Bonk>>, F8: Into<Option<Vec<i32>>>, F9: Into<Option<BTreeSet<i32>>>, F10: Into<Option<BTreeMap<i32, i32>>>, F11: Into<Option<String>>, F12: Into<Option<i32>> {
-    VersioningTestV2 {
-      begin_in_both: begin_in_both.into(),
-      newint: newint.into(),
-      newbyte: newbyte.into(),
-      newshort: newshort.into(),
-      newlong: newlong.into(),
-      newdouble: newdouble.into(),
-      newstruct: newstruct.into(),
-      newlist: newlist.into(),
-      newset: newset.into(),
-      newmap: newmap.into(),
-      newstring: newstring.into(),
-      end_in_both: end_in_both.into(),
+    pub fn new<F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12>(begin_in_both: F1, newint: F2, newbyte: F3, newshort: F4, newlong: F5, newdouble: F6, newstruct: F7, newlist: F8, newset: F9, newmap: F10, newstring: F11, end_in_both: F12) -> VersioningTestV2 where F1: Into<Option<i32>>, F2: Into<Option<i32>>, F3: Into<Option<i8>>, F4: Into<Option<i16>>, F5: Into<Option<i64>>, F6: Into<Option<OrderedFloat<f64>>>, F7: Into<Option<Bonk>>, F8: Into<Option<Vec<i32>>>, F9: Into<Option<BTreeSet<i32>>>, F10: Into<Option<BTreeMap<i32, i32>>>, F11: Into<Option<String>>, F12: Into<Option<i32>> {
+        VersioningTestV2 {
+            begin_in_both: begin_in_both.into(),
+            newint: newint.into(),
+            newbyte: newbyte.into(),
+            newshort: newshort.into(),
+            newlong: newlong.into(),
+            newdouble: newdouble.into(),
+            newstruct: newstruct.into(),
+            newlist: newlist.into(),
+            newset: newset.into(),
+            newmap: newmap.into(),
+            newstring: newstring.into(),
+            end_in_both: end_in_both.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<VersioningTestV2> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = Some(0);
-    let mut f_2: Option<i32> = Some(0);
-    let mut f_3: Option<i8> = Some(0);
-    let mut f_4: Option<i16> = Some(0);
-    let mut f_5: Option<i64> = Some(0);
-    let mut f_6: Option<OrderedFloat<f64>> = Some(OrderedFloat::from(0.0));
-    let mut f_7: Option<Bonk> = None;
-    let mut f_8: Option<Vec<i32>> = Some(Vec::new());
-    let mut f_9: Option<BTreeSet<i32>> = Some(BTreeSet::new());
-    let mut f_10: Option<BTreeMap<i32, i32>> = Some(BTreeMap::new());
-    let mut f_11: Option<String> = Some("".to_owned());
-    let mut f_12: Option<i32> = Some(0);
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_i32().await?;
-          f_2 = Some(val);
-        },
-        3 => {
-          let val = i_prot.read_i8().await?;
-          f_3 = Some(val);
-        },
-        4 => {
-          let val = i_prot.read_i16().await?;
-          f_4 = Some(val);
-        },
-        5 => {
-          let val = i_prot.read_i64().await?;
-          f_5 = Some(val);
-        },
-        6 => {
-          let val = OrderedFloat::from(i_prot.read_double().await?);
-          f_6 = Some(val);
-        },
-        7 => {
-          let val = Bonk::read_from_in_protocol(i_prot).await?;
-          f_7 = Some(val);
-        },
-        8 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_16 = i_prot.read_i32().await?;
-            val.push(list_elem_16);
-          }
-          i_prot.read_list_end().await?;
-          f_8 = Some(val);
-        },
-        9 => {
-          let set_ident = i_prot.read_set_begin().await?;
-          let mut val: BTreeSet<i32> = BTreeSet::new();
-          for _ in 0..set_ident.size {
-            let set_elem_17 = i_prot.read_i32().await?;
-            val.insert(set_elem_17);
-          }
-          i_prot.read_set_end().await?;
-          f_9 = Some(val);
-        },
-        10 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<i32, i32> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_18 = i_prot.read_i32().await?;
-            let map_val_19 = i_prot.read_i32().await?;
-            val.insert(map_key_18, map_val_19);
-          }
-          i_prot.read_map_end().await?;
-          f_10 = Some(val);
-        },
-        11 => {
-          let val = i_prot.read_string().await?;
-          f_11 = Some(val);
-        },
-        12 => {
-          let val = i_prot.read_i32().await?;
-          f_12 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<VersioningTestV2> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i32> = Some(0);
+        let mut f_2: Option<i32> = Some(0);
+        let mut f_3: Option<i8> = Some(0);
+        let mut f_4: Option<i16> = Some(0);
+        let mut f_5: Option<i64> = Some(0);
+        let mut f_6: Option<OrderedFloat<f64>> = Some(OrderedFloat::from(0.0));
+        let mut f_7: Option<Bonk> = None;
+        let mut f_8: Option<Vec<i32>> = Some(Vec::new());
+        let mut f_9: Option<BTreeSet<i32>> = Some(BTreeSet::new());
+        let mut f_10: Option<BTreeMap<i32, i32>> = Some(BTreeMap::new());
+        let mut f_11: Option<String> = Some("".to_owned());
+        let mut f_12: Option<i32> = Some(0);
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i32().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_i32().await?;
+                    f_2 = Some(val);
+                }
+                3 => {
+                    let val = i_prot.read_i8().await?;
+                    f_3 = Some(val);
+                }
+                4 => {
+                    let val = i_prot.read_i16().await?;
+                    f_4 = Some(val);
+                }
+                5 => {
+                    let val = i_prot.read_i64().await?;
+                    f_5 = Some(val);
+                }
+                6 => {
+                    let val = OrderedFloat::from(i_prot.read_double().await?);
+                    f_6 = Some(val);
+                }
+                7 => {
+                    let val = Bonk::read_from_in_protocol(i_prot).await?;
+                    f_7 = Some(val);
+                }
+                8 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_16 = i_prot.read_i32().await?;
+                        val.push(list_elem_16);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_8 = Some(val);
+                }
+                9 => {
+                    let set_ident = i_prot.read_set_begin().await?;
+                    let mut val: BTreeSet<i32> = BTreeSet::new();
+                    for _ in 0..set_ident.size {
+                        let set_elem_17 = i_prot.read_i32().await?;
+                        val.insert(set_elem_17);
+                    }
+                    i_prot.read_set_end().await?;
+                    f_9 = Some(val);
+                }
+                10 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<i32, i32> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_18 = i_prot.read_i32().await?;
+                        let map_val_19 = i_prot.read_i32().await?;
+                        val.insert(map_key_18, map_val_19);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_10 = Some(val);
+                }
+                11 => {
+                    let val = i_prot.read_string().await?;
+                    f_11 = Some(val);
+                }
+                12 => {
+                    let val = i_prot.read_i32().await?;
+                    f_12 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = VersioningTestV2 {
+            begin_in_both: f_1,
+            newint: f_2,
+            newbyte: f_3,
+            newshort: f_4,
+            newlong: f_5,
+            newdouble: f_6,
+            newstruct: f_7,
+            newlist: f_8,
+            newset: f_9,
+            newmap: f_10,
+            newstring: f_11,
+            end_in_both: f_12,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = VersioningTestV2 {
-      begin_in_both: f_1,
-      newint: f_2,
-      newbyte: f_3,
-      newshort: f_4,
-      newlong: f_5,
-      newdouble: f_6,
-      newstruct: f_7,
-      newlist: f_8,
-      newset: f_9,
-      newmap: f_10,
-      newstring: f_11,
-      end_in_both: f_12,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("VersioningTestV2");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.begin_in_both {
-      o_prot.write_field_begin(&TFieldIdentifier::new("begin_in_both", TType::I32, 1)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("VersioningTestV2");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.begin_in_both {
+            o_prot.write_field_begin(&TFieldIdentifier::new("begin_in_both", TType::I32, 1)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.newint {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newint", TType::I32, 2)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.newbyte {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newbyte", TType::I08, 3)).await?;
+            o_prot.write_i8(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.newshort {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newshort", TType::I16, 4)).await?;
+            o_prot.write_i16(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.newlong {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newlong", TType::I64, 5)).await?;
+            o_prot.write_i64(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.newdouble {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newdouble", TType::Double, 6)).await?;
+            o_prot.write_double(fld_var.into()).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.newstruct {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newstruct", TType::Struct, 7)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.newlist {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newlist", TType::List, 8)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_i32(*e).await?;
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.newset {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newset", TType::Set, 9)).await?;
+            o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_i32(*e).await?;
+                o_prot.write_set_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.newmap {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newmap", TType::Map, 10)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                o_prot.write_i32(*k).await?;
+                o_prot.write_i32(*v).await?;
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.newstring {
+            o_prot.write_field_begin(&TFieldIdentifier::new("newstring", TType::String, 11)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.end_in_both {
+            o_prot.write_field_begin(&TFieldIdentifier::new("end_in_both", TType::I32, 12)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(fld_var) = self.newint {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newint", TType::I32, 2)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.newbyte {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newbyte", TType::I08, 3)).await?;
-      o_prot.write_i8(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.newshort {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newshort", TType::I16, 4)).await?;
-      o_prot.write_i16(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.newlong {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newlong", TType::I64, 5)).await?;
-      o_prot.write_i64(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.newdouble {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newdouble", TType::Double, 6)).await?;
-      o_prot.write_double(fld_var.into()).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.newstruct {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newstruct", TType::Struct, 7)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.newlist {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newlist", TType::List, 8)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_i32(*e).await?;
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.newset {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newset", TType::Set, 9)).await?;
-      o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_i32(*e).await?;
-        o_prot.write_set_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.newmap {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newmap", TType::Map, 10)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        o_prot.write_i32(*k).await?;
-        o_prot.write_i32(*v).await?;
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.newstring {
-      o_prot.write_field_begin(&TFieldIdentifier::new("newstring", TType::String, 11)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.end_in_both {
-      o_prot.write_field_begin(&TFieldIdentifier::new("end_in_both", TType::I32, 12)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for VersioningTestV2 {
-  fn default() -> Self {
-    VersioningTestV2{
-      begin_in_both: Some(0),
-      newint: Some(0),
-      newbyte: Some(0),
-      newshort: Some(0),
-      newlong: Some(0),
-      newdouble: Some(OrderedFloat::from(0.0)),
-      newstruct: None,
-      newlist: Some(Vec::new()),
-      newset: Some(BTreeSet::new()),
-      newmap: Some(BTreeMap::new()),
-      newstring: Some("".to_owned()),
-      end_in_both: Some(0),
+    fn default() -> Self {
+        VersioningTestV2 {
+            begin_in_both: Some(0),
+            newint: Some(0),
+            newbyte: Some(0),
+            newshort: Some(0),
+            newlong: Some(0),
+            newdouble: Some(OrderedFloat::from(0.0)),
+            newstruct: None,
+            newlist: Some(Vec::new()),
+            newset: Some(BTreeSet::new()),
+            newmap: Some(BTreeMap::new()),
+            newstring: Some("".to_owned()),
+            end_in_both: Some(0),
+        }
     }
-  }
 }
 
 //
@@ -1697,90 +1699,90 @@ impl Default for VersioningTestV2 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListTypeVersioningV1 {
-  pub myints: Option<Vec<i32>>,
-  pub hello: Option<String>,
+    pub myints: Option<Vec<i32>>,
+    pub hello: Option<String>,
 }
 
 impl ListTypeVersioningV1 {
-  pub fn new<F1, F2>(myints: F1, hello: F2) -> ListTypeVersioningV1 where F1: Into<Option<Vec<i32>>>, F2: Into<Option<String>> {
-    ListTypeVersioningV1 {
-      myints: myints.into(),
-      hello: hello.into(),
+    pub fn new<F1, F2>(myints: F1, hello: F2) -> ListTypeVersioningV1 where F1: Into<Option<Vec<i32>>>, F2: Into<Option<String>> {
+        ListTypeVersioningV1 {
+            myints: myints.into(),
+            hello: hello.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ListTypeVersioningV1> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<i32>> = Some(Vec::new());
-    let mut f_2: Option<String> = Some("".to_owned());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_20 = i_prot.read_i32().await?;
-            val.push(list_elem_20);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_string().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ListTypeVersioningV1> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<i32>> = Some(Vec::new());
+        let mut f_2: Option<String> = Some("".to_owned());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_20 = i_prot.read_i32().await?;
+                        val.push(list_elem_20);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_string().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ListTypeVersioningV1 {
+            myints: f_1,
+            hello: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ListTypeVersioningV1 {
-      myints: f_1,
-      hello: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ListTypeVersioningV1");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.myints {
-      o_prot.write_field_begin(&TFieldIdentifier::new("myints", TType::List, 1)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_i32(*e).await?;
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ListTypeVersioningV1");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.myints {
+            o_prot.write_field_begin(&TFieldIdentifier::new("myints", TType::List, 1)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_i32(*e).await?;
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.hello {
+            o_prot.write_field_begin(&TFieldIdentifier::new("hello", TType::String, 2)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.hello {
-      o_prot.write_field_begin(&TFieldIdentifier::new("hello", TType::String, 2)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for ListTypeVersioningV1 {
-  fn default() -> Self {
-    ListTypeVersioningV1{
-      myints: Some(Vec::new()),
-      hello: Some("".to_owned()),
+    fn default() -> Self {
+        ListTypeVersioningV1 {
+            myints: Some(Vec::new()),
+            hello: Some("".to_owned()),
+        }
     }
-  }
 }
 
 //
@@ -1789,90 +1791,90 @@ impl Default for ListTypeVersioningV1 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListTypeVersioningV2 {
-  pub strings: Option<Vec<String>>,
-  pub hello: Option<String>,
+    pub strings: Option<Vec<String>>,
+    pub hello: Option<String>,
 }
 
 impl ListTypeVersioningV2 {
-  pub fn new<F1, F2>(strings: F1, hello: F2) -> ListTypeVersioningV2 where F1: Into<Option<Vec<String>>>, F2: Into<Option<String>> {
-    ListTypeVersioningV2 {
-      strings: strings.into(),
-      hello: hello.into(),
+    pub fn new<F1, F2>(strings: F1, hello: F2) -> ListTypeVersioningV2 where F1: Into<Option<Vec<String>>>, F2: Into<Option<String>> {
+        ListTypeVersioningV2 {
+            strings: strings.into(),
+            hello: hello.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ListTypeVersioningV2> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<String>> = Some(Vec::new());
-    let mut f_2: Option<String> = Some("".to_owned());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<String> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_21 = i_prot.read_string().await?;
-            val.push(list_elem_21);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_string().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ListTypeVersioningV2> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<String>> = Some(Vec::new());
+        let mut f_2: Option<String> = Some("".to_owned());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<String> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_21 = i_prot.read_string().await?;
+                        val.push(list_elem_21);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_string().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ListTypeVersioningV2 {
+            strings: f_1,
+            hello: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ListTypeVersioningV2 {
-      strings: f_1,
-      hello: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ListTypeVersioningV2");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.strings {
-      o_prot.write_field_begin(&TFieldIdentifier::new("strings", TType::List, 1)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::String, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_string(e).await?;
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ListTypeVersioningV2");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.strings {
+            o_prot.write_field_begin(&TFieldIdentifier::new("strings", TType::List, 1)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::String, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_string(e).await?;
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.hello {
+            o_prot.write_field_begin(&TFieldIdentifier::new("hello", TType::String, 2)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.hello {
-      o_prot.write_field_begin(&TFieldIdentifier::new("hello", TType::String, 2)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for ListTypeVersioningV2 {
-  fn default() -> Self {
-    ListTypeVersioningV2{
-      strings: Some(Vec::new()),
-      hello: Some("".to_owned()),
+    fn default() -> Self {
+        ListTypeVersioningV2 {
+            strings: Some(Vec::new()),
+            hello: Some("".to_owned()),
+        }
     }
-  }
 }
 
 //
@@ -1881,75 +1883,75 @@ impl Default for ListTypeVersioningV2 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct GuessProtocolStruct {
-  pub map_field: Option<BTreeMap<String, String>>,
+    pub map_field: Option<BTreeMap<String, String>>,
 }
 
 impl GuessProtocolStruct {
-  pub fn new<F7>(map_field: F7) -> GuessProtocolStruct where F7: Into<Option<BTreeMap<String, String>>> {
-    GuessProtocolStruct {
-      map_field: map_field.into(),
+    pub fn new<F7>(map_field: F7) -> GuessProtocolStruct where F7: Into<Option<BTreeMap<String, String>>> {
+        GuessProtocolStruct {
+            map_field: map_field.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<GuessProtocolStruct> {
-    i_prot.read_struct_begin().await?;
-    let mut f_7: Option<BTreeMap<String, String>> = Some(BTreeMap::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        7 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<String, String> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_22 = i_prot.read_string().await?;
-            let map_val_23 = i_prot.read_string().await?;
-            val.insert(map_key_22, map_val_23);
-          }
-          i_prot.read_map_end().await?;
-          f_7 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<GuessProtocolStruct> {
+        i_prot.read_struct_begin().await?;
+        let mut f_7: Option<BTreeMap<String, String>> = Some(BTreeMap::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                7 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<String, String> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_22 = i_prot.read_string().await?;
+                        let map_val_23 = i_prot.read_string().await?;
+                        val.insert(map_key_22, map_val_23);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_7 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = GuessProtocolStruct {
+            map_field: f_7,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = GuessProtocolStruct {
-      map_field: f_7,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("GuessProtocolStruct");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.map_field {
-      o_prot.write_field_begin(&TFieldIdentifier::new("map_field", TType::Map, 7)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::String, TType::String, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        o_prot.write_string(k).await?;
-        o_prot.write_string(v).await?;
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("GuessProtocolStruct");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.map_field {
+            o_prot.write_field_begin(&TFieldIdentifier::new("map_field", TType::Map, 7)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::String, TType::String, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                o_prot.write_string(k).await?;
+                o_prot.write_string(v).await?;
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for GuessProtocolStruct {
-  fn default() -> Self {
-    GuessProtocolStruct{
-      map_field: Some(BTreeMap::new()),
+    fn default() -> Self {
+        GuessProtocolStruct {
+            map_field: Some(BTreeMap::new()),
+        }
     }
-  }
 }
 
 //
@@ -1958,236 +1960,236 @@ impl Default for GuessProtocolStruct {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct LargeDeltas {
-  pub b1: Option<Bools>,
-  pub b10: Option<Bools>,
-  pub b100: Option<Bools>,
-  pub check_true: Option<bool>,
-  pub b1000: Option<Bools>,
-  pub check_false: Option<bool>,
-  pub vertwo2000: Option<VersioningTestV2>,
-  pub a_set2500: Option<BTreeSet<String>>,
-  pub vertwo3000: Option<VersioningTestV2>,
-  pub big_numbers: Option<Vec<i32>>,
+    pub b1: Option<Bools>,
+    pub b10: Option<Bools>,
+    pub b100: Option<Bools>,
+    pub check_true: Option<bool>,
+    pub b1000: Option<Bools>,
+    pub check_false: Option<bool>,
+    pub vertwo2000: Option<VersioningTestV2>,
+    pub a_set2500: Option<BTreeSet<String>>,
+    pub vertwo3000: Option<VersioningTestV2>,
+    pub big_numbers: Option<Vec<i32>>,
 }
 
 impl LargeDeltas {
-  pub fn new<F1, F10, F100, F500, F1000, F1500, F2000, F2500, F3000, F4000>(b1: F1, b10: F10, b100: F100, check_true: F500, b1000: F1000, check_false: F1500, vertwo2000: F2000, a_set2500: F2500, vertwo3000: F3000, big_numbers: F4000) -> LargeDeltas where F1: Into<Option<Bools>>, F10: Into<Option<Bools>>, F100: Into<Option<Bools>>, F500: Into<Option<bool>>, F1000: Into<Option<Bools>>, F1500: Into<Option<bool>>, F2000: Into<Option<VersioningTestV2>>, F2500: Into<Option<BTreeSet<String>>>, F3000: Into<Option<VersioningTestV2>>, F4000: Into<Option<Vec<i32>>> {
-    LargeDeltas {
-      b1: b1.into(),
-      b10: b10.into(),
-      b100: b100.into(),
-      check_true: check_true.into(),
-      b1000: b1000.into(),
-      check_false: check_false.into(),
-      vertwo2000: vertwo2000.into(),
-      a_set2500: a_set2500.into(),
-      vertwo3000: vertwo3000.into(),
-      big_numbers: big_numbers.into(),
+    pub fn new<F1, F10, F100, F500, F1000, F1500, F2000, F2500, F3000, F4000>(b1: F1, b10: F10, b100: F100, check_true: F500, b1000: F1000, check_false: F1500, vertwo2000: F2000, a_set2500: F2500, vertwo3000: F3000, big_numbers: F4000) -> LargeDeltas where F1: Into<Option<Bools>>, F10: Into<Option<Bools>>, F100: Into<Option<Bools>>, F500: Into<Option<bool>>, F1000: Into<Option<Bools>>, F1500: Into<Option<bool>>, F2000: Into<Option<VersioningTestV2>>, F2500: Into<Option<BTreeSet<String>>>, F3000: Into<Option<VersioningTestV2>>, F4000: Into<Option<Vec<i32>>> {
+        LargeDeltas {
+            b1: b1.into(),
+            b10: b10.into(),
+            b100: b100.into(),
+            check_true: check_true.into(),
+            b1000: b1000.into(),
+            check_false: check_false.into(),
+            vertwo2000: vertwo2000.into(),
+            a_set2500: a_set2500.into(),
+            vertwo3000: vertwo3000.into(),
+            big_numbers: big_numbers.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<LargeDeltas> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Bools> = None;
-    let mut f_10: Option<Bools> = None;
-    let mut f_100: Option<Bools> = None;
-    let mut f_500: Option<bool> = Some(false);
-    let mut f_1000: Option<Bools> = None;
-    let mut f_1500: Option<bool> = Some(false);
-    let mut f_2000: Option<VersioningTestV2> = None;
-    let mut f_2500: Option<BTreeSet<String>> = Some(BTreeSet::new());
-    let mut f_3000: Option<VersioningTestV2> = None;
-    let mut f_4000: Option<Vec<i32>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = Bools::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        10 => {
-          let val = Bools::read_from_in_protocol(i_prot).await?;
-          f_10 = Some(val);
-        },
-        100 => {
-          let val = Bools::read_from_in_protocol(i_prot).await?;
-          f_100 = Some(val);
-        },
-        500 => {
-          let val = i_prot.read_bool().await?;
-          f_500 = Some(val);
-        },
-        1000 => {
-          let val = Bools::read_from_in_protocol(i_prot).await?;
-          f_1000 = Some(val);
-        },
-        1500 => {
-          let val = i_prot.read_bool().await?;
-          f_1500 = Some(val);
-        },
-        2000 => {
-          let val = VersioningTestV2::read_from_in_protocol(i_prot).await?;
-          f_2000 = Some(val);
-        },
-        2500 => {
-          let set_ident = i_prot.read_set_begin().await?;
-          let mut val: BTreeSet<String> = BTreeSet::new();
-          for _ in 0..set_ident.size {
-            let set_elem_24 = i_prot.read_string().await?;
-            val.insert(set_elem_24);
-          }
-          i_prot.read_set_end().await?;
-          f_2500 = Some(val);
-        },
-        3000 => {
-          let val = VersioningTestV2::read_from_in_protocol(i_prot).await?;
-          f_3000 = Some(val);
-        },
-        4000 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_25 = i_prot.read_i32().await?;
-            val.push(list_elem_25);
-          }
-          i_prot.read_list_end().await?;
-          f_4000 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<LargeDeltas> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Bools> = None;
+        let mut f_10: Option<Bools> = None;
+        let mut f_100: Option<Bools> = None;
+        let mut f_500: Option<bool> = Some(false);
+        let mut f_1000: Option<Bools> = None;
+        let mut f_1500: Option<bool> = Some(false);
+        let mut f_2000: Option<VersioningTestV2> = None;
+        let mut f_2500: Option<BTreeSet<String>> = Some(BTreeSet::new());
+        let mut f_3000: Option<VersioningTestV2> = None;
+        let mut f_4000: Option<Vec<i32>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = Bools::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                10 => {
+                    let val = Bools::read_from_in_protocol(i_prot).await?;
+                    f_10 = Some(val);
+                }
+                100 => {
+                    let val = Bools::read_from_in_protocol(i_prot).await?;
+                    f_100 = Some(val);
+                }
+                500 => {
+                    let val = i_prot.read_bool().await?;
+                    f_500 = Some(val);
+                }
+                1000 => {
+                    let val = Bools::read_from_in_protocol(i_prot).await?;
+                    f_1000 = Some(val);
+                }
+                1500 => {
+                    let val = i_prot.read_bool().await?;
+                    f_1500 = Some(val);
+                }
+                2000 => {
+                    let val = VersioningTestV2::read_from_in_protocol(i_prot).await?;
+                    f_2000 = Some(val);
+                }
+                2500 => {
+                    let set_ident = i_prot.read_set_begin().await?;
+                    let mut val: BTreeSet<String> = BTreeSet::new();
+                    for _ in 0..set_ident.size {
+                        let set_elem_24 = i_prot.read_string().await?;
+                        val.insert(set_elem_24);
+                    }
+                    i_prot.read_set_end().await?;
+                    f_2500 = Some(val);
+                }
+                3000 => {
+                    let val = VersioningTestV2::read_from_in_protocol(i_prot).await?;
+                    f_3000 = Some(val);
+                }
+                4000 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_25 = i_prot.read_i32().await?;
+                        val.push(list_elem_25);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_4000 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = LargeDeltas {
+            b1: f_1,
+            b10: f_10,
+            b100: f_100,
+            check_true: f_500,
+            b1000: f_1000,
+            check_false: f_1500,
+            vertwo2000: f_2000,
+            a_set2500: f_2500,
+            vertwo3000: f_3000,
+            big_numbers: f_4000,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = LargeDeltas {
-      b1: f_1,
-      b10: f_10,
-      b100: f_100,
-      check_true: f_500,
-      b1000: f_1000,
-      check_false: f_1500,
-      vertwo2000: f_2000,
-      a_set2500: f_2500,
-      vertwo3000: f_3000,
-      big_numbers: f_4000,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("LargeDeltas");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.b1 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("b1", TType::Struct, 1)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("LargeDeltas");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.b1 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("b1", TType::Struct, 1)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.b10 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("b10", TType::Struct, 10)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.b100 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("b100", TType::Struct, 100)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.check_true {
+            o_prot.write_field_begin(&TFieldIdentifier::new("check_true", TType::Bool, 500)).await?;
+            o_prot.write_bool(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.b1000 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("b1000", TType::Struct, 1000)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(fld_var) = self.check_false {
+            o_prot.write_field_begin(&TFieldIdentifier::new("check_false", TType::Bool, 1500)).await?;
+            o_prot.write_bool(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.vertwo2000 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("vertwo2000", TType::Struct, 2000)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.a_set2500 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("a_set2500", TType::Set, 2500)).await?;
+            o_prot.write_set_begin(&TSetIdentifier::new(TType::String, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_string(e).await?;
+                o_prot.write_set_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.vertwo3000 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("vertwo3000", TType::Struct, 3000)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.big_numbers {
+            o_prot.write_field_begin(&TFieldIdentifier::new("big_numbers", TType::List, 4000)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_i32(*e).await?;
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.b10 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("b10", TType::Struct, 10)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.b100 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("b100", TType::Struct, 100)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.check_true {
-      o_prot.write_field_begin(&TFieldIdentifier::new("check_true", TType::Bool, 500)).await?;
-      o_prot.write_bool(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.b1000 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("b1000", TType::Struct, 1000)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(fld_var) = self.check_false {
-      o_prot.write_field_begin(&TFieldIdentifier::new("check_false", TType::Bool, 1500)).await?;
-      o_prot.write_bool(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.vertwo2000 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("vertwo2000", TType::Struct, 2000)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.a_set2500 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("a_set2500", TType::Set, 2500)).await?;
-      o_prot.write_set_begin(&TSetIdentifier::new(TType::String, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_string(e).await?;
-        o_prot.write_set_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.vertwo3000 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("vertwo3000", TType::Struct, 3000)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    if let Some(ref fld_var) = self.big_numbers {
-      o_prot.write_field_begin(&TFieldIdentifier::new("big_numbers", TType::List, 4000)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_i32(*e).await?;
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for LargeDeltas {
-  fn default() -> Self {
-    LargeDeltas{
-      b1: None,
-      b10: None,
-      b100: None,
-      check_true: Some(false),
-      b1000: None,
-      check_false: Some(false),
-      vertwo2000: None,
-      a_set2500: Some(BTreeSet::new()),
-      vertwo3000: None,
-      big_numbers: Some(Vec::new()),
+    fn default() -> Self {
+        LargeDeltas {
+            b1: None,
+            b10: None,
+            b100: None,
+            check_true: Some(false),
+            b1000: None,
+            check_false: Some(false),
+            vertwo2000: None,
+            a_set2500: Some(BTreeSet::new()),
+            vertwo3000: None,
+            big_numbers: Some(Vec::new()),
+        }
     }
-  }
 }
 
 //
@@ -2196,83 +2198,83 @@ impl Default for LargeDeltas {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct NestedListsI32x2 {
-  pub integerlist: Option<Vec<Vec<i32>>>,
+    pub integerlist: Option<Vec<Vec<i32>>>,
 }
 
 impl NestedListsI32x2 {
-  pub fn new<F1>(integerlist: F1) -> NestedListsI32x2 where F1: Into<Option<Vec<Vec<i32>>>> {
-    NestedListsI32x2 {
-      integerlist: integerlist.into(),
-    }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedListsI32x2> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<Vec<i32>>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<Vec<i32>> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_ident = i_prot.read_list_begin().await?;
-            let mut list_elem_26: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
-            for _ in 0..list_ident.size {
-              let list_elem_27 = i_prot.read_i32().await?;
-              list_elem_26.push(list_elem_27);
-            }
-            i_prot.read_list_end().await?;
-            val.push(list_elem_26);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    let ret = NestedListsI32x2 {
-      integerlist: f_1,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("NestedListsI32x2");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.integerlist {
-      o_prot.write_field_begin(&TFieldIdentifier::new("integerlist", TType::List, 1)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::List, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_list_begin(&TListIdentifier::new(TType::I32, e.len() as i32)).await?;
-        for e in e {
-          o_prot.write_i32(*e).await?;
-          o_prot.write_list_end().await?;
+    pub fn new<F1>(integerlist: F1) -> NestedListsI32x2 where F1: Into<Option<Vec<Vec<i32>>>> {
+        NestedListsI32x2 {
+            integerlist: integerlist.into(),
         }
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedListsI32x2> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<Vec<i32>>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<Vec<i32>> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_ident = i_prot.read_list_begin().await?;
+                        let mut list_elem_26: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
+                        for _ in 0..list_ident.size {
+                            let list_elem_27 = i_prot.read_i32().await?;
+                            list_elem_26.push(list_elem_27);
+                        }
+                        i_prot.read_list_end().await?;
+                        val.push(list_elem_26);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = NestedListsI32x2 {
+            integerlist: f_1,
+        };
+        Ok(ret)
+    }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("NestedListsI32x2");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.integerlist {
+            o_prot.write_field_begin(&TFieldIdentifier::new("integerlist", TType::List, 1)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::List, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_list_begin(&TListIdentifier::new(TType::I32, e.len() as i32)).await?;
+                for e in e {
+                    o_prot.write_i32(*e).await?;
+                    o_prot.write_list_end().await?;
+                }
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 impl Default for NestedListsI32x2 {
-  fn default() -> Self {
-    NestedListsI32x2{
-      integerlist: Some(Vec::new()),
+    fn default() -> Self {
+        NestedListsI32x2 {
+            integerlist: Some(Vec::new()),
+        }
     }
-  }
 }
 
 //
@@ -2281,93 +2283,93 @@ impl Default for NestedListsI32x2 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct NestedListsI32x3 {
-  pub integerlist: Option<Vec<Vec<Vec<i32>>>>,
+    pub integerlist: Option<Vec<Vec<Vec<i32>>>>,
 }
 
 impl NestedListsI32x3 {
-  pub fn new<F1>(integerlist: F1) -> NestedListsI32x3 where F1: Into<Option<Vec<Vec<Vec<i32>>>>> {
-    NestedListsI32x3 {
-      integerlist: integerlist.into(),
-    }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedListsI32x3> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<Vec<Vec<i32>>>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<Vec<Vec<i32>>> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_ident = i_prot.read_list_begin().await?;
-            let mut list_elem_28: Vec<Vec<i32>> = Vec::with_capacity(list_ident.size as usize);
-            for _ in 0..list_ident.size {
-              let list_ident = i_prot.read_list_begin().await?;
-              let mut list_elem_29: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
-              for _ in 0..list_ident.size {
-                let list_elem_30 = i_prot.read_i32().await?;
-                list_elem_29.push(list_elem_30);
-              }
-              i_prot.read_list_end().await?;
-              list_elem_28.push(list_elem_29);
-            }
-            i_prot.read_list_end().await?;
-            val.push(list_elem_28);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    let ret = NestedListsI32x3 {
-      integerlist: f_1,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("NestedListsI32x3");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.integerlist {
-      o_prot.write_field_begin(&TFieldIdentifier::new("integerlist", TType::List, 1)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::List, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_list_begin(&TListIdentifier::new(TType::List, e.len() as i32)).await?;
-        for e in e {
-          o_prot.write_list_begin(&TListIdentifier::new(TType::I32, e.len() as i32)).await?;
-          for e in e {
-            o_prot.write_i32(*e).await?;
-            o_prot.write_list_end().await?;
-          }
-          o_prot.write_list_end().await?;
+    pub fn new<F1>(integerlist: F1) -> NestedListsI32x3 where F1: Into<Option<Vec<Vec<Vec<i32>>>>> {
+        NestedListsI32x3 {
+            integerlist: integerlist.into(),
         }
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedListsI32x3> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<Vec<Vec<i32>>>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<Vec<Vec<i32>>> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_ident = i_prot.read_list_begin().await?;
+                        let mut list_elem_28: Vec<Vec<i32>> = Vec::with_capacity(list_ident.size as usize);
+                        for _ in 0..list_ident.size {
+                            let list_ident = i_prot.read_list_begin().await?;
+                            let mut list_elem_29: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
+                            for _ in 0..list_ident.size {
+                                let list_elem_30 = i_prot.read_i32().await?;
+                                list_elem_29.push(list_elem_30);
+                            }
+                            i_prot.read_list_end().await?;
+                            list_elem_28.push(list_elem_29);
+                        }
+                        i_prot.read_list_end().await?;
+                        val.push(list_elem_28);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = NestedListsI32x3 {
+            integerlist: f_1,
+        };
+        Ok(ret)
+    }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("NestedListsI32x3");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.integerlist {
+            o_prot.write_field_begin(&TFieldIdentifier::new("integerlist", TType::List, 1)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::List, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_list_begin(&TListIdentifier::new(TType::List, e.len() as i32)).await?;
+                for e in e {
+                    o_prot.write_list_begin(&TListIdentifier::new(TType::I32, e.len() as i32)).await?;
+                    for e in e {
+                        o_prot.write_i32(*e).await?;
+                        o_prot.write_list_end().await?;
+                    }
+                    o_prot.write_list_end().await?;
+                }
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 impl Default for NestedListsI32x3 {
-  fn default() -> Self {
-    NestedListsI32x3{
-      integerlist: Some(Vec::new()),
+    fn default() -> Self {
+        NestedListsI32x3 {
+            integerlist: Some(Vec::new()),
+        }
     }
-  }
 }
 
 //
@@ -2376,171 +2378,171 @@ impl Default for NestedListsI32x3 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct NestedMixedx2 {
-  pub int_set_list: Option<Vec<BTreeSet<i32>>>,
-  pub map_int_strset: Option<BTreeMap<i32, BTreeSet<String>>>,
-  pub map_int_strset_list: Option<Vec<BTreeMap<i32, BTreeSet<String>>>>,
+    pub int_set_list: Option<Vec<BTreeSet<i32>>>,
+    pub map_int_strset: Option<BTreeMap<i32, BTreeSet<String>>>,
+    pub map_int_strset_list: Option<Vec<BTreeMap<i32, BTreeSet<String>>>>,
 }
 
 impl NestedMixedx2 {
-  pub fn new<F1, F2, F3>(int_set_list: F1, map_int_strset: F2, map_int_strset_list: F3) -> NestedMixedx2 where F1: Into<Option<Vec<BTreeSet<i32>>>>, F2: Into<Option<BTreeMap<i32, BTreeSet<String>>>>, F3: Into<Option<Vec<BTreeMap<i32, BTreeSet<String>>>>> {
-    NestedMixedx2 {
-      int_set_list: int_set_list.into(),
-      map_int_strset: map_int_strset.into(),
-      map_int_strset_list: map_int_strset_list.into(),
-    }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedMixedx2> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<BTreeSet<i32>>> = Some(Vec::new());
-    let mut f_2: Option<BTreeMap<i32, BTreeSet<String>>> = Some(BTreeMap::new());
-    let mut f_3: Option<Vec<BTreeMap<i32, BTreeSet<String>>>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<BTreeSet<i32>> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let set_ident = i_prot.read_set_begin().await?;
-            let mut list_elem_31: BTreeSet<i32> = BTreeSet::new();
-            for _ in 0..set_ident.size {
-              let set_elem_32 = i_prot.read_i32().await?;
-              list_elem_31.insert(set_elem_32);
-            }
-            i_prot.read_set_end().await?;
-            val.push(list_elem_31);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<i32, BTreeSet<String>> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_33 = i_prot.read_i32().await?;
-            let set_ident = i_prot.read_set_begin().await?;
-            let mut map_val_34: BTreeSet<String> = BTreeSet::new();
-            for _ in 0..set_ident.size {
-              let set_elem_35 = i_prot.read_string().await?;
-              map_val_34.insert(set_elem_35);
-            }
-            i_prot.read_set_end().await?;
-            val.insert(map_key_33, map_val_34);
-          }
-          i_prot.read_map_end().await?;
-          f_2 = Some(val);
-        },
-        3 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<BTreeMap<i32, BTreeSet<String>>> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let map_ident = i_prot.read_map_begin().await?;
-            let mut list_elem_36: BTreeMap<i32, BTreeSet<String>> = BTreeMap::new();
-            for _ in 0..map_ident.size {
-              let map_key_37 = i_prot.read_i32().await?;
-              let set_ident = i_prot.read_set_begin().await?;
-              let mut map_val_38: BTreeSet<String> = BTreeSet::new();
-              for _ in 0..set_ident.size {
-                let set_elem_39 = i_prot.read_string().await?;
-                map_val_38.insert(set_elem_39);
-              }
-              i_prot.read_set_end().await?;
-              list_elem_36.insert(map_key_37, map_val_38);
-            }
-            i_prot.read_map_end().await?;
-            val.push(list_elem_36);
-          }
-          i_prot.read_list_end().await?;
-          f_3 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    let ret = NestedMixedx2 {
-      int_set_list: f_1,
-      map_int_strset: f_2,
-      map_int_strset_list: f_3,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("NestedMixedx2");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.int_set_list {
-      o_prot.write_field_begin(&TFieldIdentifier::new("int_set_list", TType::List, 1)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::Set, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, e.len() as i32)).await?;
-        for e in e {
-          o_prot.write_i32(*e).await?;
-          o_prot.write_set_end().await?;
+    pub fn new<F1, F2, F3>(int_set_list: F1, map_int_strset: F2, map_int_strset_list: F3) -> NestedMixedx2 where F1: Into<Option<Vec<BTreeSet<i32>>>>, F2: Into<Option<BTreeMap<i32, BTreeSet<String>>>>, F3: Into<Option<Vec<BTreeMap<i32, BTreeSet<String>>>>> {
+        NestedMixedx2 {
+            int_set_list: int_set_list.into(),
+            map_int_strset: map_int_strset.into(),
+            map_int_strset_list: map_int_strset_list.into(),
         }
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
     }
-    if let Some(ref fld_var) = self.map_int_strset {
-      o_prot.write_field_begin(&TFieldIdentifier::new("map_int_strset", TType::Map, 2)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Set, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        o_prot.write_i32(*k).await?;
-        o_prot.write_set_begin(&TSetIdentifier::new(TType::String, v.len() as i32)).await?;
-        for e in v {
-          o_prot.write_string(e).await?;
-          o_prot.write_set_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedMixedx2> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<BTreeSet<i32>>> = Some(Vec::new());
+        let mut f_2: Option<BTreeMap<i32, BTreeSet<String>>> = Some(BTreeMap::new());
+        let mut f_3: Option<Vec<BTreeMap<i32, BTreeSet<String>>>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<BTreeSet<i32>> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let set_ident = i_prot.read_set_begin().await?;
+                        let mut list_elem_31: BTreeSet<i32> = BTreeSet::new();
+                        for _ in 0..set_ident.size {
+                            let set_elem_32 = i_prot.read_i32().await?;
+                            list_elem_31.insert(set_elem_32);
+                        }
+                        i_prot.read_set_end().await?;
+                        val.push(list_elem_31);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<i32, BTreeSet<String>> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_33 = i_prot.read_i32().await?;
+                        let set_ident = i_prot.read_set_begin().await?;
+                        let mut map_val_34: BTreeSet<String> = BTreeSet::new();
+                        for _ in 0..set_ident.size {
+                            let set_elem_35 = i_prot.read_string().await?;
+                            map_val_34.insert(set_elem_35);
+                        }
+                        i_prot.read_set_end().await?;
+                        val.insert(map_key_33, map_val_34);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_2 = Some(val);
+                }
+                3 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<BTreeMap<i32, BTreeSet<String>>> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let map_ident = i_prot.read_map_begin().await?;
+                        let mut list_elem_36: BTreeMap<i32, BTreeSet<String>> = BTreeMap::new();
+                        for _ in 0..map_ident.size {
+                            let map_key_37 = i_prot.read_i32().await?;
+                            let set_ident = i_prot.read_set_begin().await?;
+                            let mut map_val_38: BTreeSet<String> = BTreeSet::new();
+                            for _ in 0..set_ident.size {
+                                let set_elem_39 = i_prot.read_string().await?;
+                                map_val_38.insert(set_elem_39);
+                            }
+                            i_prot.read_set_end().await?;
+                            list_elem_36.insert(map_key_37, map_val_38);
+                        }
+                        i_prot.read_map_end().await?;
+                        val.push(list_elem_36);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_3 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
         }
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+        i_prot.read_struct_end().await?;
+        let ret = NestedMixedx2 {
+            int_set_list: f_1,
+            map_int_strset: f_2,
+            map_int_strset_list: f_3,
+        };
+        Ok(ret)
     }
-    if let Some(ref fld_var) = self.map_int_strset_list {
-      o_prot.write_field_begin(&TFieldIdentifier::new("map_int_strset_list", TType::List, 3)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::Map, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Set, e.len() as i32)).await?;
-        for (k, v) in e {
-          o_prot.write_i32(*k).await?;
-          o_prot.write_set_begin(&TSetIdentifier::new(TType::String, v.len() as i32)).await?;
-          for e in v {
-            o_prot.write_string(e).await?;
-            o_prot.write_set_end().await?;
-          }
-          o_prot.write_map_end().await?;
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("NestedMixedx2");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.int_set_list {
+            o_prot.write_field_begin(&TFieldIdentifier::new("int_set_list", TType::List, 1)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::Set, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, e.len() as i32)).await?;
+                for e in e {
+                    o_prot.write_i32(*e).await?;
+                    o_prot.write_set_end().await?;
+                }
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
         }
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+        if let Some(ref fld_var) = self.map_int_strset {
+            o_prot.write_field_begin(&TFieldIdentifier::new("map_int_strset", TType::Map, 2)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Set, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                o_prot.write_i32(*k).await?;
+                o_prot.write_set_begin(&TSetIdentifier::new(TType::String, v.len() as i32)).await?;
+                for e in v {
+                    o_prot.write_string(e).await?;
+                    o_prot.write_set_end().await?;
+                }
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.map_int_strset_list {
+            o_prot.write_field_begin(&TFieldIdentifier::new("map_int_strset_list", TType::List, 3)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::Map, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Set, e.len() as i32)).await?;
+                for (k, v) in e {
+                    o_prot.write_i32(*k).await?;
+                    o_prot.write_set_begin(&TSetIdentifier::new(TType::String, v.len() as i32)).await?;
+                    for e in v {
+                        o_prot.write_string(e).await?;
+                        o_prot.write_set_end().await?;
+                    }
+                    o_prot.write_map_end().await?;
+                }
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for NestedMixedx2 {
-  fn default() -> Self {
-    NestedMixedx2{
-      int_set_list: Some(Vec::new()),
-      map_int_strset: Some(BTreeMap::new()),
-      map_int_strset_list: Some(Vec::new()),
+    fn default() -> Self {
+        NestedMixedx2 {
+            int_set_list: Some(Vec::new()),
+            map_int_strset: Some(BTreeMap::new()),
+            map_int_strset_list: Some(Vec::new()),
+        }
     }
-  }
 }
 
 //
@@ -2549,73 +2551,73 @@ impl Default for NestedMixedx2 {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListBonks {
-  pub bonk: Option<Vec<Bonk>>,
+    pub bonk: Option<Vec<Bonk>>,
 }
 
 impl ListBonks {
-  pub fn new<F1>(bonk: F1) -> ListBonks where F1: Into<Option<Vec<Bonk>>> {
-    ListBonks {
-      bonk: bonk.into(),
+    pub fn new<F1>(bonk: F1) -> ListBonks where F1: Into<Option<Vec<Bonk>>> {
+        ListBonks {
+            bonk: bonk.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ListBonks> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<Bonk>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<Bonk> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_40 = Bonk::read_from_in_protocol(i_prot).await?;
-            val.push(list_elem_40);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ListBonks> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<Bonk>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<Bonk> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_40 = Bonk::read_from_in_protocol(i_prot).await?;
+                        val.push(list_elem_40);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ListBonks {
+            bonk: f_1,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ListBonks {
-      bonk: f_1,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ListBonks");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.bonk {
-      o_prot.write_field_begin(&TFieldIdentifier::new("bonk", TType::List, 1)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::Struct, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        e.write_to_out_protocol(o_prot).await?;
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ListBonks");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.bonk {
+            o_prot.write_field_begin(&TFieldIdentifier::new("bonk", TType::List, 1)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::Struct, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                e.write_to_out_protocol(o_prot).await?;
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for ListBonks {
-  fn default() -> Self {
-    ListBonks{
-      bonk: Some(Vec::new()),
+    fn default() -> Self {
+        ListBonks {
+            bonk: Some(Vec::new()),
+        }
     }
-  }
 }
 
 //
@@ -2624,93 +2626,93 @@ impl Default for ListBonks {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct NestedListsBonk {
-  pub bonk: Option<Vec<Vec<Vec<Bonk>>>>,
+    pub bonk: Option<Vec<Vec<Vec<Bonk>>>>,
 }
 
 impl NestedListsBonk {
-  pub fn new<F1>(bonk: F1) -> NestedListsBonk where F1: Into<Option<Vec<Vec<Vec<Bonk>>>>> {
-    NestedListsBonk {
-      bonk: bonk.into(),
-    }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedListsBonk> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<Vec<Vec<Bonk>>>> = Some(Vec::new());
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<Vec<Vec<Bonk>>> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_ident = i_prot.read_list_begin().await?;
-            let mut list_elem_41: Vec<Vec<Bonk>> = Vec::with_capacity(list_ident.size as usize);
-            for _ in 0..list_ident.size {
-              let list_ident = i_prot.read_list_begin().await?;
-              let mut list_elem_42: Vec<Bonk> = Vec::with_capacity(list_ident.size as usize);
-              for _ in 0..list_ident.size {
-                let list_elem_43 = Bonk::read_from_in_protocol(i_prot).await?;
-                list_elem_42.push(list_elem_43);
-              }
-              i_prot.read_list_end().await?;
-              list_elem_41.push(list_elem_42);
-            }
-            i_prot.read_list_end().await?;
-            val.push(list_elem_41);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    let ret = NestedListsBonk {
-      bonk: f_1,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("NestedListsBonk");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.bonk {
-      o_prot.write_field_begin(&TFieldIdentifier::new("bonk", TType::List, 1)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::List, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_list_begin(&TListIdentifier::new(TType::List, e.len() as i32)).await?;
-        for e in e {
-          o_prot.write_list_begin(&TListIdentifier::new(TType::Struct, e.len() as i32)).await?;
-          for e in e {
-            e.write_to_out_protocol(o_prot).await?;
-            o_prot.write_list_end().await?;
-          }
-          o_prot.write_list_end().await?;
+    pub fn new<F1>(bonk: F1) -> NestedListsBonk where F1: Into<Option<Vec<Vec<Vec<Bonk>>>>> {
+        NestedListsBonk {
+            bonk: bonk.into(),
         }
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<NestedListsBonk> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<Vec<Vec<Bonk>>>> = Some(Vec::new());
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<Vec<Vec<Bonk>>> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_ident = i_prot.read_list_begin().await?;
+                        let mut list_elem_41: Vec<Vec<Bonk>> = Vec::with_capacity(list_ident.size as usize);
+                        for _ in 0..list_ident.size {
+                            let list_ident = i_prot.read_list_begin().await?;
+                            let mut list_elem_42: Vec<Bonk> = Vec::with_capacity(list_ident.size as usize);
+                            for _ in 0..list_ident.size {
+                                let list_elem_43 = Bonk::read_from_in_protocol(i_prot).await?;
+                                list_elem_42.push(list_elem_43);
+                            }
+                            i_prot.read_list_end().await?;
+                            list_elem_41.push(list_elem_42);
+                        }
+                        i_prot.read_list_end().await?;
+                        val.push(list_elem_41);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = NestedListsBonk {
+            bonk: f_1,
+        };
+        Ok(ret)
+    }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("NestedListsBonk");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.bonk {
+            o_prot.write_field_begin(&TFieldIdentifier::new("bonk", TType::List, 1)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::List, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_list_begin(&TListIdentifier::new(TType::List, e.len() as i32)).await?;
+                for e in e {
+                    o_prot.write_list_begin(&TListIdentifier::new(TType::Struct, e.len() as i32)).await?;
+                    for e in e {
+                        e.write_to_out_protocol(o_prot).await?;
+                        o_prot.write_list_end().await?;
+                    }
+                    o_prot.write_list_end().await?;
+                }
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 impl Default for NestedListsBonk {
-  fn default() -> Self {
-    NestedListsBonk{
-      bonk: Some(Vec::new()),
+    fn default() -> Self {
+        NestedListsBonk {
+            bonk: Some(Vec::new()),
+        }
     }
-  }
 }
 
 //
@@ -2719,80 +2721,80 @@ impl Default for NestedListsBonk {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct BoolTest {
-  pub b: Option<bool>,
-  pub s: Option<String>,
+    pub b: Option<bool>,
+    pub s: Option<String>,
 }
 
 impl BoolTest {
-  pub fn new<F1, F2>(b: F1, s: F2) -> BoolTest where F1: Into<Option<bool>>, F2: Into<Option<String>> {
-    BoolTest {
-      b: b.into(),
-      s: s.into(),
+    pub fn new<F1, F2>(b: F1, s: F2) -> BoolTest where F1: Into<Option<bool>>, F2: Into<Option<String>> {
+        BoolTest {
+            b: b.into(),
+            s: s.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<BoolTest> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<bool> = None;
-    let mut f_2: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_bool().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_string().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<BoolTest> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<bool> = None;
+        let mut f_2: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_bool().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_string().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = BoolTest {
+            b: f_1,
+            s: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = BoolTest {
-      b: f_1,
-      s: f_2,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("BoolTest");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.b {
-      o_prot.write_field_begin(&TFieldIdentifier::new("b", TType::Bool, 1)).await?;
-      o_prot.write_bool(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("BoolTest");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.b {
+            o_prot.write_field_begin(&TFieldIdentifier::new("b", TType::Bool, 1)).await?;
+            o_prot.write_bool(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.s {
+            o_prot.write_field_begin(&TFieldIdentifier::new("s", TType::String, 2)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.s {
-      o_prot.write_field_begin(&TFieldIdentifier::new("s", TType::String, 2)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for BoolTest {
-  fn default() -> Self {
-    BoolTest{
-      b: Some(false),
-      s: Some("".to_owned()),
+    fn default() -> Self {
+        BoolTest {
+            b: Some(false),
+            s: Some("".to_owned()),
+        }
     }
-  }
 }
 
 //
@@ -2801,51 +2803,51 @@ impl Default for BoolTest {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct StructA {
-  pub s: String,
+    pub s: String,
 }
 
 impl StructA {
-  pub fn new(s: String) -> StructA {
-    StructA {
-      s: s,
+    pub fn new(s: String) -> StructA {
+        StructA {
+            s: s,
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<StructA> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<StructA> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("StructA.s", &f_1)?;
+        let ret = StructA {
+            s: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("StructA.s", &f_1)?;
-    let ret = StructA {
-      s: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("StructA");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("s", TType::String, 1)).await?;
-    o_prot.write_string(&self.s).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("StructA");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("s", TType::String, 1)).await?;
+        o_prot.write_string(&self.s).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -2854,67 +2856,67 @@ impl StructA {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct StructB {
-  pub aa: Option<StructA>,
-  pub ab: StructA,
+    pub aa: Option<StructA>,
+    pub ab: StructA,
 }
 
 impl StructB {
-  pub fn new<F1>(aa: F1, ab: StructA) -> StructB where F1: Into<Option<StructA>> {
-    StructB {
-      aa: aa.into(),
-      ab: ab,
+    pub fn new<F1>(aa: F1, ab: StructA) -> StructB where F1: Into<Option<StructA>> {
+        StructB {
+            aa: aa.into(),
+            ab: ab,
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<StructB> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<StructA> = None;
-    let mut f_2: Option<StructA> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = StructA::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = StructA::read_from_in_protocol(i_prot).await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<StructB> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<StructA> = None;
+        let mut f_2: Option<StructA> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = StructA::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = StructA::read_from_in_protocol(i_prot).await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("StructB.ab", &f_2)?;
+        let ret = StructB {
+            aa: f_1,
+            ab: f_2.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("StructB.ab", &f_2)?;
-    let ret = StructB {
-      aa: f_1,
-      ab: f_2.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("StructB");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.aa {
-      o_prot.write_field_begin(&TFieldIdentifier::new("aa", TType::Struct, 1)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("StructB");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.aa {
+            o_prot.write_field_begin(&TFieldIdentifier::new("aa", TType::Struct, 1)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_begin(&TFieldIdentifier::new("ab", TType::Struct, 2)).await?;
+        self.ab.write_to_out_protocol(o_prot).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_begin(&TFieldIdentifier::new("ab", TType::Struct, 2)).await?;
-    self.ab.write_to_out_protocol(o_prot).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 //
@@ -2923,82 +2925,83 @@ impl StructB {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct OptionalSetDefaultTest {
-  pub with_default: Option<BTreeSet<String>>,
+    pub with_default: Option<BTreeSet<String>>,
 }
 
 impl OptionalSetDefaultTest {
-  pub fn new<F1>(with_default: F1) -> OptionalSetDefaultTest where F1: Into<Option<BTreeSet<String>>> {
-    OptionalSetDefaultTest {
-      with_default: with_default.into(),
+    pub fn new<F1>(with_default: F1) -> OptionalSetDefaultTest where F1: Into<Option<BTreeSet<String>>> {
+        OptionalSetDefaultTest {
+            with_default: with_default.into(),
+        }
     }
-  }
-  pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<OptionalSetDefaultTest> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<BTreeSet<String>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let set_ident = i_prot.read_set_begin().await?;
-          let mut val: BTreeSet<String> = BTreeSet::new();
-          for _ in 0..set_ident.size {
-            let set_elem_44 = i_prot.read_string().await?;
-            val.insert(set_elem_44);
-          }
-          i_prot.read_set_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    pub async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<OptionalSetDefaultTest> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<BTreeSet<String>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let set_ident = i_prot.read_set_begin().await?;
+                    let mut val: BTreeSet<String> = BTreeSet::new();
+                    for _ in 0..set_ident.size {
+                        let set_elem_44 = i_prot.read_string().await?;
+                        val.insert(set_elem_44);
+                    }
+                    i_prot.read_set_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = OptionalSetDefaultTest {
+            with_default: f_1,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = OptionalSetDefaultTest {
-      with_default: f_1,
-    };
-    Ok(ret)
-  }
-  pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("OptionalSetDefaultTest");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.with_default {
-      o_prot.write_field_begin(&TFieldIdentifier::new("with_default", TType::Set, 1)).await?;
-      o_prot.write_set_begin(&TSetIdentifier::new(TType::String, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_string(e).await?;
-        o_prot.write_set_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    pub async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("OptionalSetDefaultTest");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.with_default {
+            o_prot.write_field_begin(&TFieldIdentifier::new("with_default", TType::Set, 1)).await?;
+            o_prot.write_set_begin(&TSetIdentifier::new(TType::String, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_string(e).await?;
+                o_prot.write_set_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 impl Default for OptionalSetDefaultTest {
-  fn default() -> Self {
-    OptionalSetDefaultTest{
-      with_default: Some(BTreeSet::new()),
+    fn default() -> Self {
+        OptionalSetDefaultTest {
+            with_default: Some(BTreeSet::new()),
+        }
     }
-  }
 }
 
 pub struct ConstMyNumberz;
+
 impl ConstMyNumberz {
-  pub fn const_value() -> Numberz {
-    {
-      Numberz::try_from(1).expect("expecting valid const value")
+    pub fn const_value() -> Numberz {
+        {
+            Numberz::try_from(1).expect("expecting valid const value")
+        }
     }
-  }
 }
 
 //
@@ -3007,80 +3010,80 @@ impl ConstMyNumberz {
 
 #[async_trait]
 pub trait TThriftTestSyncClient {
-  /// Prints "testVoid()" and returns nothing.
-  async fn test_void(&mut self) -> async_thrift::Result<()>;
-  /// Prints 'testString("%s")' with thing as '%s'
+    /// Prints "testVoid()" and returns nothing.
+    async fn test_void(&mut self) -> async_thrift::Result<()>;
+    /// Prints 'testString("%s")' with thing as '%s'
   /// @param string thing - the string to print
   /// @return string - returns the string 'thing'
-  async fn test_string(&mut self, thing: String) -> async_thrift::Result<String>;
-  /// Prints 'testBool("%s")' where '%s' with thing as 'true' or 'false'
+    async fn test_string(&mut self, thing: String) -> async_thrift::Result<String>;
+    /// Prints 'testBool("%s")' where '%s' with thing as 'true' or 'false'
   /// @param bool  thing - the bool data to print
   /// @return bool  - returns the bool 'thing'
-  async fn test_bool(&mut self, thing: bool) -> async_thrift::Result<bool>;
-  /// Prints 'testByte("%d")' with thing as '%d'
+    async fn test_bool(&mut self, thing: bool) -> async_thrift::Result<bool>;
+    /// Prints 'testByte("%d")' with thing as '%d'
   /// The types i8 and byte are synonyms, use of i8 is encouraged, byte still exists for the sake of compatibility.
   /// @param byte thing - the i8/byte to print
   /// @return i8 - returns the i8/byte 'thing'
-  async fn test_byte(&mut self, thing: i8) -> async_thrift::Result<i8>;
-  /// Prints 'testI32("%d")' with thing as '%d'
+    async fn test_byte(&mut self, thing: i8) -> async_thrift::Result<i8>;
+    /// Prints 'testI32("%d")' with thing as '%d'
   /// @param i32 thing - the i32 to print
   /// @return i32 - returns the i32 'thing'
-  async fn test_i32(&mut self, thing: i32) -> async_thrift::Result<i32>;
-  /// Prints 'testI64("%d")' with thing as '%d'
+    async fn test_i32(&mut self, thing: i32) -> async_thrift::Result<i32>;
+    /// Prints 'testI64("%d")' with thing as '%d'
   /// @param i64 thing - the i64 to print
   /// @return i64 - returns the i64 'thing'
-  async fn test_i64(&mut self, thing: i64) -> async_thrift::Result<i64>;
-  /// Prints 'testDouble("%f")' with thing as '%f'
+    async fn test_i64(&mut self, thing: i64) -> async_thrift::Result<i64>;
+    /// Prints 'testDouble("%f")' with thing as '%f'
   /// @param double thing - the double to print
   /// @return double - returns the double 'thing'
-  async fn test_double(&mut self, thing: OrderedFloat<f64>) -> async_thrift::Result<OrderedFloat<f64>>;
-  /// Prints 'testBinary("%s")' where '%s' is a hex-formatted string of thing's data
+    async fn test_double(&mut self, thing: OrderedFloat<f64>) -> async_thrift::Result<OrderedFloat<f64>>;
+    /// Prints 'testBinary("%s")' where '%s' is a hex-formatted string of thing's data
   /// @param binary  thing - the binary data to print
   /// @return binary  - returns the binary 'thing'
-  async fn test_binary(&mut self, thing: Vec<u8>) -> async_thrift::Result<Vec<u8>>;
-  /// Prints 'testStruct("{%s}")' where thing has been formatted into a string of comma separated values
+    async fn test_binary(&mut self, thing: Vec<u8>) -> async_thrift::Result<Vec<u8>>;
+    /// Prints 'testStruct("{%s}")' where thing has been formatted into a string of comma separated values
   /// @param Xtruct thing - the Xtruct to print
   /// @return Xtruct - returns the Xtruct 'thing'
-  async fn test_struct(&mut self, thing: Xtruct) -> async_thrift::Result<Xtruct>;
-  /// Prints 'testNest("{%s}")' where thing has been formatted into a string of the nested struct
+    async fn test_struct(&mut self, thing: Xtruct) -> async_thrift::Result<Xtruct>;
+    /// Prints 'testNest("{%s}")' where thing has been formatted into a string of the nested struct
   /// @param Xtruct2 thing - the Xtruct2 to print
   /// @return Xtruct2 - returns the Xtruct2 'thing'
-  async fn test_nest(&mut self, thing: Xtruct2) -> async_thrift::Result<Xtruct2>;
-  /// Prints 'testMap("{%s")' where thing has been formatted into a string of 'key => value' pairs
+    async fn test_nest(&mut self, thing: Xtruct2) -> async_thrift::Result<Xtruct2>;
+    /// Prints 'testMap("{%s")' where thing has been formatted into a string of 'key => value' pairs
   ///  separated by commas and new lines
   /// @param map<i32,i32> thing - the map<i32,i32> to print
   /// @return map<i32,i32> - returns the map<i32,i32> 'thing'
-  async fn test_map(&mut self, thing: BTreeMap<i32, i32>) -> async_thrift::Result<BTreeMap<i32, i32>>;
-  /// Prints 'testStringMap("{%s}")' where thing has been formatted into a string of 'key => value' pairs
+    async fn test_map(&mut self, thing: BTreeMap<i32, i32>) -> async_thrift::Result<BTreeMap<i32, i32>>;
+    /// Prints 'testStringMap("{%s}")' where thing has been formatted into a string of 'key => value' pairs
   ///  separated by commas and new lines
   /// @param map<string,string> thing - the map<string,string> to print
   /// @return map<string,string> - returns the map<string,string> 'thing'
-  async fn test_string_map(&mut self, thing: BTreeMap<String, String>) -> async_thrift::Result<BTreeMap<String, String>>;
-  /// Prints 'testSet("{%s}")' where thing has been formatted into a string of values
+    async fn test_string_map(&mut self, thing: BTreeMap<String, String>) -> async_thrift::Result<BTreeMap<String, String>>;
+    /// Prints 'testSet("{%s}")' where thing has been formatted into a string of values
   ///  separated by commas and new lines
   /// @param set<i32> thing - the set<i32> to print
   /// @return set<i32> - returns the set<i32> 'thing'
-  async fn test_set(&mut self, thing: BTreeSet<i32>) -> async_thrift::Result<BTreeSet<i32>>;
-  /// Prints 'testList("{%s}")' where thing has been formatted into a string of values
+    async fn test_set(&mut self, thing: BTreeSet<i32>) -> async_thrift::Result<BTreeSet<i32>>;
+    /// Prints 'testList("{%s}")' where thing has been formatted into a string of values
   ///  separated by commas and new lines
   /// @param list<i32> thing - the list<i32> to print
   /// @return list<i32> - returns the list<i32> 'thing'
-  async fn test_list(&mut self, thing: Vec<i32>) -> async_thrift::Result<Vec<i32>>;
-  /// Prints 'testEnum("%d")' where thing has been formatted into its numeric value
+    async fn test_list(&mut self, thing: Vec<i32>) -> async_thrift::Result<Vec<i32>>;
+    /// Prints 'testEnum("%d")' where thing has been formatted into its numeric value
   /// @param Numberz thing - the Numberz to print
   /// @return Numberz - returns the Numberz 'thing'
-  async fn test_enum(&mut self, thing: Numberz) -> async_thrift::Result<Numberz>;
-  /// Prints 'testTypedef("%d")' with thing as '%d'
+    async fn test_enum(&mut self, thing: Numberz) -> async_thrift::Result<Numberz>;
+    /// Prints 'testTypedef("%d")' with thing as '%d'
   /// @param UserId thing - the UserId to print
   /// @return UserId - returns the UserId 'thing'
-  async fn test_typedef(&mut self, thing: UserId) -> async_thrift::Result<UserId>;
-  /// Prints 'testMapMap("%d")' with hello as '%d'
+    async fn test_typedef(&mut self, thing: UserId) -> async_thrift::Result<UserId>;
+    /// Prints 'testMapMap("%d")' with hello as '%d'
   /// @param i32 hello - the i32 to print
   /// @return map<i32,map<i32,i32>> - returns a dictionary with these values:
   ///   {-4 => {-4 => -4, -3 => -3, -2 => -2, -1 => -1, }, 4 => {1 => 1, 2 => 2, 3 => 3, 4 => 4, }, }
-  async fn test_map_map(&mut self, hello: i32) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>>;
-  /// So you think you've got this all worked out, eh?
-  /// 
+    async fn test_map_map(&mut self, hello: i32) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>>;
+    /// So you think you've got this all worked out, eh?
+  ///
   /// Creates a map with these values and prints it out:
   ///   { 1 => { 2 => argument,
   ///            3 => argument,
@@ -3088,8 +3091,8 @@ pub trait TThriftTestSyncClient {
   ///     2 => { 6 => <empty Insanity struct>, },
   ///   }
   /// @return map<UserId, map<Numberz,Insanity>> - a map with the above values
-  async fn test_insanity(&mut self, argument: Insanity) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>>;
-  /// Prints 'testMulti()'
+    async fn test_insanity(&mut self, argument: Insanity) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>>;
+    /// Prints 'testMulti()'
   /// @param i8 arg0 -
   /// @param i32 arg1 -
   /// @param i64 arg2 -
@@ -3098,633 +3101,636 @@ pub trait TThriftTestSyncClient {
   /// @param UserId arg5 -
   /// @return Xtruct - returns an Xtruct with string_thing = "Hello2, byte_thing = arg0, i32_thing = arg1
   ///    and i64_thing = arg2
-  async fn test_multi(&mut self, arg0: i8, arg1: i32, arg2: i64, arg3: BTreeMap<i16, String>, arg4: Numberz, arg5: UserId) -> async_thrift::Result<Xtruct>;
-  /// Print 'testException(%s)' with arg as '%s'
+    async fn test_multi(&mut self, arg0: i8, arg1: i32, arg2: i64, arg3: BTreeMap<i16, String>, arg4: Numberz, arg5: UserId) -> async_thrift::Result<Xtruct>;
+    /// Print 'testException(%s)' with arg as '%s'
   /// @param string arg - a string indication what type of exception to throw
   /// if arg == "Xception" throw Xception with errorCode = 1001 and message = arg
   /// else if arg == "TException" throw TException
   /// else do not throw anything
-  async fn test_exception(&mut self, arg: String) -> async_thrift::Result<()>;
-  /// Print 'testMultiException(%s, %s)' with arg0 as '%s' and arg1 as '%s'
+    async fn test_exception(&mut self, arg: String) -> async_thrift::Result<()>;
+    /// Print 'testMultiException(%s, %s)' with arg0 as '%s' and arg1 as '%s'
   /// @param string arg - a string indicating what type of exception to throw
   /// if arg0 == "Xception" throw Xception with errorCode = 1001 and message = "This is an Xception"
   /// else if arg0 == "Xception2" throw Xception2 with errorCode = 2002 and struct_thing.string_thing = "This is an Xception2"
   /// else do not throw anything
   /// @return Xtruct - an Xtruct with string_thing = arg1
-  async fn test_multi_exception(&mut self, arg0: String, arg1: String) -> async_thrift::Result<Xtruct>;
-  /// Print 'testOneway(%d): Sleeping...' with secondsToSleep as '%d'
+    async fn test_multi_exception(&mut self, arg0: String, arg1: String) -> async_thrift::Result<Xtruct>;
+    /// Print 'testOneway(%d): Sleeping...' with secondsToSleep as '%d'
   /// sleep 'secondsToSleep'
   /// Print 'testOneway(%d): done sleeping!' with secondsToSleep as '%d'
   /// @param i32 secondsToSleep - the number of seconds to sleep
-  async fn test_oneway(&mut self, seconds_to_sleep: i32) -> async_thrift::Result<()>;
+    async fn test_oneway(&mut self, seconds_to_sleep: i32) -> async_thrift::Result<()>;
 }
 
 pub trait TThriftTestSyncClientMarker {}
 
 pub struct ThriftTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
-  _i_prot: IP,
-  _o_prot: OP,
-  _sequence_number: i32,
+    _i_prot: IP,
+    _o_prot: OP,
+    _sequence_number: i32,
 }
 
-impl <IP, OP> ThriftTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
-  pub fn new(input_protocol: IP, output_protocol: OP) -> ThriftTestSyncClient<IP, OP> {
-    ThriftTestSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
-  }
+impl<IP, OP> ThriftTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+    pub fn new(input_protocol: IP, output_protocol: OP) -> ThriftTestSyncClient<IP, OP> {
+        ThriftTestSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
+    }
 }
 
-impl <IP, OP> TThriftClient for ThriftTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
-  fn i_prot_mut(&mut self) -> &mut (dyn TAsyncInputProtocol + Send) { &mut self._i_prot }
-  fn o_prot_mut(&mut self) -> &mut (dyn TAsyncOutputProtocol + Send) { &mut self._o_prot }
-  fn sequence_number(&self) -> i32 { self._sequence_number }
-  fn increment_sequence_number(&mut self) -> i32 { self._sequence_number += 1; self._sequence_number }
+impl<IP, OP> TThriftClient for ThriftTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+    fn i_prot_mut(&mut self) -> &mut (dyn TAsyncInputProtocol + Send) { &mut self._i_prot }
+    fn o_prot_mut(&mut self) -> &mut (dyn TAsyncOutputProtocol + Send) { &mut self._o_prot }
+    fn sequence_number(&self) -> i32 { self._sequence_number }
+    fn increment_sequence_number(&mut self) -> i32 {
+        self._sequence_number += 1;
+        self._sequence_number
+    }
 }
 
-impl <IP, OP> TThriftTestSyncClientMarker for ThriftTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
+impl<IP, OP> TThriftTestSyncClientMarker for ThriftTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
 
 #[async_trait]
-impl <C: TThriftClient + TThriftTestSyncClientMarker+ Send> TThriftTestSyncClient for C {
-  async fn test_void(&mut self) -> async_thrift::Result<()> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestVoidArgs {  };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testVoid", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestVoidResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+impl<C: TThriftClient + TThriftTestSyncClientMarker + Send> TThriftTestSyncClient for C {
+    async fn test_void(&mut self) -> async_thrift::Result<()> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestVoidArgs {};
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testVoid", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestVoidResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_string(&mut self, thing: String) -> async_thrift::Result<String> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testString", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestStringArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testString", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestStringResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_string(&mut self, thing: String) -> async_thrift::Result<String> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testString", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestStringArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testString", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestStringResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_bool(&mut self, thing: bool) -> async_thrift::Result<bool> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testBool", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestBoolArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testBool", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestBoolResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_bool(&mut self, thing: bool) -> async_thrift::Result<bool> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testBool", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestBoolArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testBool", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestBoolResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_byte(&mut self, thing: i8) -> async_thrift::Result<i8> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testByte", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestByteArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testByte", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestByteResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_byte(&mut self, thing: i8) -> async_thrift::Result<i8> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testByte", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestByteArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testByte", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestByteResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_i32(&mut self, thing: i32) -> async_thrift::Result<i32> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testI32", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestI32Args { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testI32", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestI32Result::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_i32(&mut self, thing: i32) -> async_thrift::Result<i32> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testI32", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestI32Args { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testI32", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestI32Result::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_i64(&mut self, thing: i64) -> async_thrift::Result<i64> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testI64", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestI64Args { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testI64", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestI64Result::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_i64(&mut self, thing: i64) -> async_thrift::Result<i64> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testI64", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestI64Args { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testI64", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestI64Result::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_double(&mut self, thing: OrderedFloat<f64>) -> async_thrift::Result<OrderedFloat<f64>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestDoubleArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testDouble", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestDoubleResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_double(&mut self, thing: OrderedFloat<f64>) -> async_thrift::Result<OrderedFloat<f64>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestDoubleArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testDouble", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestDoubleResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_binary(&mut self, thing: Vec<u8>) -> async_thrift::Result<Vec<u8>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestBinaryArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testBinary", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestBinaryResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_binary(&mut self, thing: Vec<u8>) -> async_thrift::Result<Vec<u8>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestBinaryArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testBinary", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestBinaryResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_struct(&mut self, thing: Xtruct) -> async_thrift::Result<Xtruct> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestStructArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testStruct", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestStructResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_struct(&mut self, thing: Xtruct) -> async_thrift::Result<Xtruct> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestStructArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testStruct", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestStructResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_nest(&mut self, thing: Xtruct2) -> async_thrift::Result<Xtruct2> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testNest", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestNestArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testNest", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestNestResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_nest(&mut self, thing: Xtruct2) -> async_thrift::Result<Xtruct2> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testNest", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestNestArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testNest", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestNestResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_map(&mut self, thing: BTreeMap<i32, i32>) -> async_thrift::Result<BTreeMap<i32, i32>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testMap", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestMapArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testMap", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestMapResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_map(&mut self, thing: BTreeMap<i32, i32>) -> async_thrift::Result<BTreeMap<i32, i32>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testMap", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestMapArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testMap", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestMapResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_string_map(&mut self, thing: BTreeMap<String, String>) -> async_thrift::Result<BTreeMap<String, String>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestStringMapArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testStringMap", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestStringMapResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_string_map(&mut self, thing: BTreeMap<String, String>) -> async_thrift::Result<BTreeMap<String, String>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestStringMapArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testStringMap", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestStringMapResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_set(&mut self, thing: BTreeSet<i32>) -> async_thrift::Result<BTreeSet<i32>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testSet", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestSetArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testSet", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestSetResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_set(&mut self, thing: BTreeSet<i32>) -> async_thrift::Result<BTreeSet<i32>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testSet", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestSetArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testSet", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestSetResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_list(&mut self, thing: Vec<i32>) -> async_thrift::Result<Vec<i32>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testList", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestListArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testList", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestListResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_list(&mut self, thing: Vec<i32>) -> async_thrift::Result<Vec<i32>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testList", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestListArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testList", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestListResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_enum(&mut self, thing: Numberz) -> async_thrift::Result<Numberz> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestEnumArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testEnum", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestEnumResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_enum(&mut self, thing: Numberz) -> async_thrift::Result<Numberz> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestEnumArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testEnum", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestEnumResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_typedef(&mut self, thing: UserId) -> async_thrift::Result<UserId> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestTypedefArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testTypedef", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestTypedefResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_typedef(&mut self, thing: UserId) -> async_thrift::Result<UserId> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestTypedefArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testTypedef", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestTypedefResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_map_map(&mut self, hello: i32) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestMapMapArgs { hello: hello };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testMapMap", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestMapMapResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_map_map(&mut self, hello: i32) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestMapMapArgs { hello: hello };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testMapMap", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestMapMapResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_insanity(&mut self, argument: Insanity) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestInsanityArgs { argument: argument };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testInsanity", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestInsanityResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_insanity(&mut self, argument: Insanity) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestInsanityArgs { argument: argument };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testInsanity", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestInsanityResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_multi(&mut self, arg0: i8, arg1: i32, arg2: i64, arg3: BTreeMap<i16, String>, arg4: Numberz, arg5: UserId) -> async_thrift::Result<Xtruct> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestMultiArgs { arg0: arg0, arg1: arg1, arg2: arg2, arg3: arg3, arg4: arg4, arg5: arg5 };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testMulti", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestMultiResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_multi(&mut self, arg0: i8, arg1: i32, arg2: i64, arg3: BTreeMap<i16, String>, arg4: Numberz, arg5: UserId) -> async_thrift::Result<Xtruct> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestMultiArgs { arg0: arg0, arg1: arg1, arg2: arg2, arg3: arg3, arg4: arg4, arg5: arg5 };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testMulti", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestMultiResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_exception(&mut self, arg: String) -> async_thrift::Result<()> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testException", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestExceptionArgs { arg: arg };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testException", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestExceptionResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_exception(&mut self, arg: String) -> async_thrift::Result<()> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testException", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestExceptionArgs { arg: arg };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testException", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestExceptionResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_multi_exception(&mut self, arg0: String, arg1: String) -> async_thrift::Result<Xtruct> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Call, self.sequence_number());
-        let call_args = ThriftTestTestMultiExceptionArgs { arg0: arg0, arg1: arg1 };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("testMultiException", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = ThriftTestTestMultiExceptionResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+    async fn test_multi_exception(&mut self, arg0: String, arg1: String) -> async_thrift::Result<Xtruct> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Call, self.sequence_number());
+                let call_args = ThriftTestTestMultiExceptionArgs { arg0: arg0, arg1: arg1 };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("testMultiException", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = ThriftTestTestMultiExceptionResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
-  async fn test_oneway(&mut self, seconds_to_sleep: i32) -> async_thrift::Result<()> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("testOneway", TMessageType::OneWay, self.sequence_number());
-        let call_args = ThriftTestTestOnewayArgs { seconds_to_sleep: seconds_to_sleep };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    Ok(())
-  }
+    async fn test_oneway(&mut self, seconds_to_sleep: i32) -> async_thrift::Result<()> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("testOneway", TMessageType::OneWay, self.sequence_number());
+                let call_args = ThriftTestTestOnewayArgs { seconds_to_sleep: seconds_to_sleep };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        Ok(())
+    }
 }
 
 //
@@ -3733,80 +3739,80 @@ impl <C: TThriftClient + TThriftTestSyncClientMarker+ Send> TThriftTestSyncClien
 
 #[async_trait]
 pub trait ThriftTestSyncHandler {
-  /// Prints "testVoid()" and returns nothing.
-  async fn handle_test_void(&self) -> async_thrift::Result<()>;
-  /// Prints 'testString("%s")' with thing as '%s'
+    /// Prints "testVoid()" and returns nothing.
+    async fn handle_test_void(&self) -> async_thrift::Result<()>;
+    /// Prints 'testString("%s")' with thing as '%s'
   /// @param string thing - the string to print
   /// @return string - returns the string 'thing'
-  async fn handle_test_string(&self, thing: String) -> async_thrift::Result<String>;
-  /// Prints 'testBool("%s")' where '%s' with thing as 'true' or 'false'
+    async fn handle_test_string(&self, thing: String) -> async_thrift::Result<String>;
+    /// Prints 'testBool("%s")' where '%s' with thing as 'true' or 'false'
   /// @param bool  thing - the bool data to print
   /// @return bool  - returns the bool 'thing'
-  async fn handle_test_bool(&self, thing: bool) -> async_thrift::Result<bool>;
-  /// Prints 'testByte("%d")' with thing as '%d'
+    async fn handle_test_bool(&self, thing: bool) -> async_thrift::Result<bool>;
+    /// Prints 'testByte("%d")' with thing as '%d'
   /// The types i8 and byte are synonyms, use of i8 is encouraged, byte still exists for the sake of compatibility.
   /// @param byte thing - the i8/byte to print
   /// @return i8 - returns the i8/byte 'thing'
-  async fn handle_test_byte(&self, thing: i8) -> async_thrift::Result<i8>;
-  /// Prints 'testI32("%d")' with thing as '%d'
+    async fn handle_test_byte(&self, thing: i8) -> async_thrift::Result<i8>;
+    /// Prints 'testI32("%d")' with thing as '%d'
   /// @param i32 thing - the i32 to print
   /// @return i32 - returns the i32 'thing'
-  async fn handle_test_i32(&self, thing: i32) -> async_thrift::Result<i32>;
-  /// Prints 'testI64("%d")' with thing as '%d'
+    async fn handle_test_i32(&self, thing: i32) -> async_thrift::Result<i32>;
+    /// Prints 'testI64("%d")' with thing as '%d'
   /// @param i64 thing - the i64 to print
   /// @return i64 - returns the i64 'thing'
-  async fn handle_test_i64(&self, thing: i64) -> async_thrift::Result<i64>;
-  /// Prints 'testDouble("%f")' with thing as '%f'
+    async fn handle_test_i64(&self, thing: i64) -> async_thrift::Result<i64>;
+    /// Prints 'testDouble("%f")' with thing as '%f'
   /// @param double thing - the double to print
   /// @return double - returns the double 'thing'
-  async fn handle_test_double(&self, thing: OrderedFloat<f64>) -> async_thrift::Result<OrderedFloat<f64>>;
-  /// Prints 'testBinary("%s")' where '%s' is a hex-formatted string of thing's data
+    async fn handle_test_double(&self, thing: OrderedFloat<f64>) -> async_thrift::Result<OrderedFloat<f64>>;
+    /// Prints 'testBinary("%s")' where '%s' is a hex-formatted string of thing's data
   /// @param binary  thing - the binary data to print
   /// @return binary  - returns the binary 'thing'
-  async fn handle_test_binary(&self, thing: Vec<u8>) -> async_thrift::Result<Vec<u8>>;
-  /// Prints 'testStruct("{%s}")' where thing has been formatted into a string of comma separated values
+    async fn handle_test_binary(&self, thing: Vec<u8>) -> async_thrift::Result<Vec<u8>>;
+    /// Prints 'testStruct("{%s}")' where thing has been formatted into a string of comma separated values
   /// @param Xtruct thing - the Xtruct to print
   /// @return Xtruct - returns the Xtruct 'thing'
-  async fn handle_test_struct(&self, thing: Xtruct) -> async_thrift::Result<Xtruct>;
-  /// Prints 'testNest("{%s}")' where thing has been formatted into a string of the nested struct
+    async fn handle_test_struct(&self, thing: Xtruct) -> async_thrift::Result<Xtruct>;
+    /// Prints 'testNest("{%s}")' where thing has been formatted into a string of the nested struct
   /// @param Xtruct2 thing - the Xtruct2 to print
   /// @return Xtruct2 - returns the Xtruct2 'thing'
-  async fn handle_test_nest(&self, thing: Xtruct2) -> async_thrift::Result<Xtruct2>;
-  /// Prints 'testMap("{%s")' where thing has been formatted into a string of 'key => value' pairs
+    async fn handle_test_nest(&self, thing: Xtruct2) -> async_thrift::Result<Xtruct2>;
+    /// Prints 'testMap("{%s")' where thing has been formatted into a string of 'key => value' pairs
   ///  separated by commas and new lines
   /// @param map<i32,i32> thing - the map<i32,i32> to print
   /// @return map<i32,i32> - returns the map<i32,i32> 'thing'
-  async fn handle_test_map(&self, thing: BTreeMap<i32, i32>) -> async_thrift::Result<BTreeMap<i32, i32>>;
-  /// Prints 'testStringMap("{%s}")' where thing has been formatted into a string of 'key => value' pairs
+    async fn handle_test_map(&self, thing: BTreeMap<i32, i32>) -> async_thrift::Result<BTreeMap<i32, i32>>;
+    /// Prints 'testStringMap("{%s}")' where thing has been formatted into a string of 'key => value' pairs
   ///  separated by commas and new lines
   /// @param map<string,string> thing - the map<string,string> to print
   /// @return map<string,string> - returns the map<string,string> 'thing'
-  async fn handle_test_string_map(&self, thing: BTreeMap<String, String>) -> async_thrift::Result<BTreeMap<String, String>>;
-  /// Prints 'testSet("{%s}")' where thing has been formatted into a string of values
+    async fn handle_test_string_map(&self, thing: BTreeMap<String, String>) -> async_thrift::Result<BTreeMap<String, String>>;
+    /// Prints 'testSet("{%s}")' where thing has been formatted into a string of values
   ///  separated by commas and new lines
   /// @param set<i32> thing - the set<i32> to print
   /// @return set<i32> - returns the set<i32> 'thing'
-  async fn handle_test_set(&self, thing: BTreeSet<i32>) -> async_thrift::Result<BTreeSet<i32>>;
-  /// Prints 'testList("{%s}")' where thing has been formatted into a string of values
+    async fn handle_test_set(&self, thing: BTreeSet<i32>) -> async_thrift::Result<BTreeSet<i32>>;
+    /// Prints 'testList("{%s}")' where thing has been formatted into a string of values
   ///  separated by commas and new lines
   /// @param list<i32> thing - the list<i32> to print
   /// @return list<i32> - returns the list<i32> 'thing'
-  async fn handle_test_list(&self, thing: Vec<i32>) -> async_thrift::Result<Vec<i32>>;
-  /// Prints 'testEnum("%d")' where thing has been formatted into its numeric value
+    async fn handle_test_list(&self, thing: Vec<i32>) -> async_thrift::Result<Vec<i32>>;
+    /// Prints 'testEnum("%d")' where thing has been formatted into its numeric value
   /// @param Numberz thing - the Numberz to print
   /// @return Numberz - returns the Numberz 'thing'
-  async fn handle_test_enum(&self, thing: Numberz) -> async_thrift::Result<Numberz>;
-  /// Prints 'testTypedef("%d")' with thing as '%d'
+    async fn handle_test_enum(&self, thing: Numberz) -> async_thrift::Result<Numberz>;
+    /// Prints 'testTypedef("%d")' with thing as '%d'
   /// @param UserId thing - the UserId to print
   /// @return UserId - returns the UserId 'thing'
-  async fn handle_test_typedef(&self, thing: UserId) -> async_thrift::Result<UserId>;
-  /// Prints 'testMapMap("%d")' with hello as '%d'
+    async fn handle_test_typedef(&self, thing: UserId) -> async_thrift::Result<UserId>;
+    /// Prints 'testMapMap("%d")' with hello as '%d'
   /// @param i32 hello - the i32 to print
   /// @return map<i32,map<i32,i32>> - returns a dictionary with these values:
   ///   {-4 => {-4 => -4, -3 => -3, -2 => -2, -1 => -1, }, 4 => {1 => 1, 2 => 2, 3 => 3, 4 => 4, }, }
-  async fn handle_test_map_map(&self, hello: i32) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>>;
-  /// So you think you've got this all worked out, eh?
-  /// 
+    async fn handle_test_map_map(&self, hello: i32) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>>;
+    /// So you think you've got this all worked out, eh?
+  ///
   /// Creates a map with these values and prints it out:
   ///   { 1 => { 2 => argument,
   ///            3 => argument,
@@ -3814,8 +3820,8 @@ pub trait ThriftTestSyncHandler {
   ///     2 => { 6 => <empty Insanity struct>, },
   ///   }
   /// @return map<UserId, map<Numberz,Insanity>> - a map with the above values
-  async fn handle_test_insanity(&self, argument: Insanity) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>>;
-  /// Prints 'testMulti()'
+    async fn handle_test_insanity(&self, argument: Insanity) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>>;
+    /// Prints 'testMulti()'
   /// @param i8 arg0 -
   /// @param i32 arg1 -
   /// @param i64 arg2 -
@@ -3824,1049 +3830,1049 @@ pub trait ThriftTestSyncHandler {
   /// @param UserId arg5 -
   /// @return Xtruct - returns an Xtruct with string_thing = "Hello2, byte_thing = arg0, i32_thing = arg1
   ///    and i64_thing = arg2
-  async fn handle_test_multi(&self, arg0: i8, arg1: i32, arg2: i64, arg3: BTreeMap<i16, String>, arg4: Numberz, arg5: UserId) -> async_thrift::Result<Xtruct>;
-  /// Print 'testException(%s)' with arg as '%s'
+    async fn handle_test_multi(&self, arg0: i8, arg1: i32, arg2: i64, arg3: BTreeMap<i16, String>, arg4: Numberz, arg5: UserId) -> async_thrift::Result<Xtruct>;
+    /// Print 'testException(%s)' with arg as '%s'
   /// @param string arg - a string indication what type of exception to throw
   /// if arg == "Xception" throw Xception with errorCode = 1001 and message = arg
   /// else if arg == "TException" throw TException
   /// else do not throw anything
-  async fn handle_test_exception(&self, arg: String) -> async_thrift::Result<()>;
-  /// Print 'testMultiException(%s, %s)' with arg0 as '%s' and arg1 as '%s'
+    async fn handle_test_exception(&self, arg: String) -> async_thrift::Result<()>;
+    /// Print 'testMultiException(%s, %s)' with arg0 as '%s' and arg1 as '%s'
   /// @param string arg - a string indicating what type of exception to throw
   /// if arg0 == "Xception" throw Xception with errorCode = 1001 and message = "This is an Xception"
   /// else if arg0 == "Xception2" throw Xception2 with errorCode = 2002 and struct_thing.string_thing = "This is an Xception2"
   /// else do not throw anything
   /// @return Xtruct - an Xtruct with string_thing = arg1
-  async fn handle_test_multi_exception(&self, arg0: String, arg1: String) -> async_thrift::Result<Xtruct>;
-  /// Print 'testOneway(%d): Sleeping...' with secondsToSleep as '%d'
+    async fn handle_test_multi_exception(&self, arg0: String, arg1: String) -> async_thrift::Result<Xtruct>;
+    /// Print 'testOneway(%d): Sleeping...' with secondsToSleep as '%d'
   /// sleep 'secondsToSleep'
   /// Print 'testOneway(%d): done sleeping!' with secondsToSleep as '%d'
   /// @param i32 secondsToSleep - the number of seconds to sleep
-  async fn handle_test_oneway(&self, seconds_to_sleep: i32) -> async_thrift::Result<()>;
+    async fn handle_test_oneway(&self, seconds_to_sleep: i32) -> async_thrift::Result<()>;
 }
 
 pub struct ThriftTestSyncProcessor<H: ThriftTestSyncHandler> {
-  handler: H,
+    handler: H,
 }
 
-impl <H: ThriftTestSyncHandler> ThriftTestSyncProcessor<H> {
-  pub fn new(handler: H) -> ThriftTestSyncProcessor<H> {
-    ThriftTestSyncProcessor {
-      handler,
+impl<H: ThriftTestSyncHandler> ThriftTestSyncProcessor<H> {
+    pub fn new(handler: H) -> ThriftTestSyncProcessor<H> {
+        ThriftTestSyncProcessor {
+            handler,
+        }
     }
-  }
-  async fn process_test_void(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_void(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_string(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_string(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_bool(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_bool(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_byte(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_byte(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_i32(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_i32(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_i64(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_i64(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_double(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_double(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_binary(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_binary(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_struct(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_struct(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_nest(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_nest(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_map(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_map(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_string_map(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_string_map(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_set(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_set(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_list(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_list(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_enum(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_enum(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_typedef(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_typedef(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_map_map(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_map_map(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_insanity(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_insanity(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_multi(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_multi(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_exception(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_exception(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_multi_exception(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_multi_exception(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
-  async fn process_test_oneway(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TThriftTestProcessFunctions::process_test_oneway(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
+    async fn process_test_void(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_void(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_string(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_string(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_bool(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_bool(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_byte(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_byte(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_i32(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_i32(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_i64(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_i64(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_double(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_double(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_binary(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_binary(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_struct(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_struct(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_nest(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_nest(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_map(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_map(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_string_map(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_string_map(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_set(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_set(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_list(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_list(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_enum(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_enum(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_typedef(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_typedef(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_map_map(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_map_map(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_insanity(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_insanity(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_multi(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_multi(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_exception(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_exception(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_multi_exception(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_multi_exception(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
+    async fn process_test_oneway(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TThriftTestProcessFunctions::process_test_oneway(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
 }
 
 pub struct TThriftTestProcessFunctions;
 
 impl TThriftTestProcessFunctions {
-  pub async fn process_test_void<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let _ = ThriftTestTestVoidArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_void().await {
-      Ok(_) => {
-        let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestVoidResult {  };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_string<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestStringArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_string(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testString", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestStringResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testString", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testString", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_bool<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestBoolArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_bool(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testBool", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestBoolResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testBool", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testBool", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_byte<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestByteArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_byte(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testByte", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestByteResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testByte", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testByte", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_i32<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestI32Args::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_i32(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testI32", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestI32Result { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testI32", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testI32", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_i64<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestI64Args::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_i64(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testI64", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestI64Result { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testI64", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testI64", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_double<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestDoubleArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_double(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestDoubleResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_binary<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestBinaryArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_binary(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestBinaryResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_struct<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestStructArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_struct(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestStructResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_nest<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestNestArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_nest(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testNest", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestNestResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testNest", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testNest", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_map<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestMapArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_map(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testMap", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestMapResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testMap", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testMap", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_string_map<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestStringMapArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_string_map(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestStringMapResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_set<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestSetArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_set(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testSet", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestSetResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testSet", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testSet", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_list<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestListArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_list(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testList", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestListResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testList", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testList", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_enum<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestEnumArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_enum(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestEnumResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_typedef<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestTypedefArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_typedef(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestTypedefResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_map_map<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestMapMapArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_map_map(args.hello).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestMapMapResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_insanity<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestInsanityArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_insanity(args.argument).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestInsanityResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_multi<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestMultiArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_multi(args.arg0, args.arg1, args.arg2, args.arg3, args.arg4, args.arg5).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestMultiResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_exception<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestExceptionArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_exception(args.arg).await {
-      Ok(_) => {
-        let message_ident = TMessageIdentifier::new("testException", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestExceptionResult { err1: None };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::User(usr_err) => {
-            if usr_err.downcast_ref::<Xception>().is_some() {
-              let err = usr_err.downcast::<Xception>().expect("downcast already checked");
-              let ret_err = ThriftTestTestExceptionResult{ err1: Some(*err) };
-              let message_ident = TMessageIdentifier::new("testException", TMessageType::Reply, incoming_sequence_number);
-              o_prot.write_message_begin(&message_ident).await?;
-              ret_err.write_to_out_protocol(o_prot).await?;
-              o_prot.write_message_end().await?;
-              o_prot.flush().await
-            } else {
-              let ret_err = {
-                ApplicationError::new(
-                  ApplicationErrorKind::Unknown,
-                  usr_err.description()
-                )
-              };
-              let message_ident = TMessageIdentifier::new("testException", TMessageType::Exception, incoming_sequence_number);
-              o_prot.write_message_begin(&message_ident).await?;
-              async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-              o_prot.write_message_end().await?;
-              o_prot.flush().await
+    pub async fn process_test_void<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let _ = ThriftTestTestVoidArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_void().await {
+            Ok(_) => {
+                let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestVoidResult {};
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
             }
-          },
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testException", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testException", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-        }
-      },
-    }
-  }
-  pub async fn process_test_multi_exception<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestMultiExceptionArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_multi_exception(args.arg0, args.arg1).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = ThriftTestTestMultiExceptionResult { result_value: Some(handler_return), err1: None, err2: None };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::User(usr_err) => {
-            if usr_err.downcast_ref::<Xception>().is_some() {
-              let err = usr_err.downcast::<Xception>().expect("downcast already checked");
-              let ret_err = ThriftTestTestMultiExceptionResult{ result_value: None, err1: Some(*err), err2: None };
-              let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Reply, incoming_sequence_number);
-              o_prot.write_message_begin(&message_ident).await?;
-              ret_err.write_to_out_protocol(o_prot).await?;
-              o_prot.write_message_end().await?;
-              o_prot.flush().await
-            } else if usr_err.downcast_ref::<Xception2>().is_some() {
-              let err = usr_err.downcast::<Xception2>().expect("downcast already checked");
-              let ret_err = ThriftTestTestMultiExceptionResult{ result_value: None, err1: None, err2: Some(*err) };
-              let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Reply, incoming_sequence_number);
-              o_prot.write_message_begin(&message_ident).await?;
-              ret_err.write_to_out_protocol(o_prot).await?;
-              o_prot.write_message_end().await?;
-              o_prot.flush().await
-            } else {
-              let ret_err = {
-                ApplicationError::new(
-                  ApplicationErrorKind::Unknown,
-                  usr_err.description()
-                )
-              };
-              let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Exception, incoming_sequence_number);
-              o_prot.write_message_begin(&message_ident).await?;
-              async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-              o_prot.write_message_end().await?;
-              o_prot.flush().await
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testVoid", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
             }
-          },
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
         }
-      },
     }
-  }
-  pub async fn process_test_oneway<H: ThriftTestSyncHandler>(handler: &H, _: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), _: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = ThriftTestTestOnewayArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_test_oneway(args.seconds_to_sleep).await {
-      Ok(_) => {
-        Ok(())
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            Err(async_thrift::Error::Application(app_err))
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            Err(async_thrift::Error::Application(ret_err))
-          },
+    pub async fn process_test_string<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestStringArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_string(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testString", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestStringResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testString", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testString", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
         }
-      },
     }
-  }
+    pub async fn process_test_bool<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestBoolArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_bool(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testBool", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestBoolResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testBool", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testBool", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_byte<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestByteArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_byte(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testByte", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestByteResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testByte", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testByte", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_i32<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestI32Args::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_i32(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testI32", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestI32Result { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testI32", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testI32", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_i64<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestI64Args::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_i64(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testI64", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestI64Result { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testI64", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testI64", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_double<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestDoubleArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_double(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestDoubleResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testDouble", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_binary<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestBinaryArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_binary(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestBinaryResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testBinary", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_struct<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestStructArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_struct(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestStructResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testStruct", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_nest<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestNestArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_nest(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testNest", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestNestResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testNest", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testNest", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_map<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestMapArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_map(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testMap", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestMapResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testMap", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testMap", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_string_map<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestStringMapArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_string_map(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestStringMapResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testStringMap", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_set<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestSetArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_set(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testSet", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestSetResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testSet", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testSet", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_list<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestListArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_list(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testList", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestListResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testList", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testList", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_enum<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestEnumArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_enum(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestEnumResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testEnum", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_typedef<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestTypedefArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_typedef(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestTypedefResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testTypedef", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_map_map<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestMapMapArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_map_map(args.hello).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestMapMapResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testMapMap", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_insanity<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestInsanityArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_insanity(args.argument).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestInsanityResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testInsanity", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_multi<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestMultiArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_multi(args.arg0, args.arg1, args.arg2, args.arg3, args.arg4, args.arg5).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestMultiResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testMulti", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_exception<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestExceptionArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_exception(args.arg).await {
+            Ok(_) => {
+                let message_ident = TMessageIdentifier::new("testException", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestExceptionResult { err1: None };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::User(usr_err) => {
+                        if usr_err.downcast_ref::<Xception>().is_some() {
+                            let err = usr_err.downcast::<Xception>().expect("downcast already checked");
+                            let ret_err = ThriftTestTestExceptionResult { err1: Some(*err) };
+                            let message_ident = TMessageIdentifier::new("testException", TMessageType::Reply, incoming_sequence_number);
+                            o_prot.write_message_begin(&message_ident).await?;
+                            ret_err.write_to_out_protocol(o_prot).await?;
+                            o_prot.write_message_end().await?;
+                            o_prot.flush().await
+                        } else {
+                            let ret_err = {
+                                ApplicationError::new(
+                                    ApplicationErrorKind::Unknown,
+                                    usr_err.description(),
+                                )
+                            };
+                            let message_ident = TMessageIdentifier::new("testException", TMessageType::Exception, incoming_sequence_number);
+                            o_prot.write_message_begin(&message_ident).await?;
+                            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                            o_prot.write_message_end().await?;
+                            o_prot.flush().await
+                        }
+                    }
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testException", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testException", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_multi_exception<H: ThriftTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestMultiExceptionArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_multi_exception(args.arg0, args.arg1).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = ThriftTestTestMultiExceptionResult { result_value: Some(handler_return), err1: None, err2: None };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::User(usr_err) => {
+                        if usr_err.downcast_ref::<Xception>().is_some() {
+                            let err = usr_err.downcast::<Xception>().expect("downcast already checked");
+                            let ret_err = ThriftTestTestMultiExceptionResult { result_value: None, err1: Some(*err), err2: None };
+                            let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Reply, incoming_sequence_number);
+                            o_prot.write_message_begin(&message_ident).await?;
+                            ret_err.write_to_out_protocol(o_prot).await?;
+                            o_prot.write_message_end().await?;
+                            o_prot.flush().await
+                        } else if usr_err.downcast_ref::<Xception2>().is_some() {
+                            let err = usr_err.downcast::<Xception2>().expect("downcast already checked");
+                            let ret_err = ThriftTestTestMultiExceptionResult { result_value: None, err1: None, err2: Some(*err) };
+                            let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Reply, incoming_sequence_number);
+                            o_prot.write_message_begin(&message_ident).await?;
+                            ret_err.write_to_out_protocol(o_prot).await?;
+                            o_prot.write_message_end().await?;
+                            o_prot.flush().await
+                        } else {
+                            let ret_err = {
+                                ApplicationError::new(
+                                    ApplicationErrorKind::Unknown,
+                                    usr_err.description(),
+                                )
+                            };
+                            let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Exception, incoming_sequence_number);
+                            o_prot.write_message_begin(&message_ident).await?;
+                            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                            o_prot.write_message_end().await?;
+                            o_prot.flush().await
+                        }
+                    }
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("testMultiException", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
+        }
+    }
+    pub async fn process_test_oneway<H: ThriftTestSyncHandler>(handler: &H, _: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), _: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = ThriftTestTestOnewayArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_test_oneway(args.seconds_to_sleep).await {
+            Ok(_) => {
+                Ok(())
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        Err(async_thrift::Error::Application(app_err))
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        Err(async_thrift::Error::Application(ret_err))
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[async_trait]
-impl <H: ThriftTestSyncHandler + Send + Sync> TAsyncProcessor for ThriftTestSyncProcessor<H> {
-  async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let message_ident = i_prot.read_message_begin().await?;
-    let res = match &*message_ident.name {
-      "testVoid" => {
-        self.process_test_void(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testString" => {
-        self.process_test_string(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testBool" => {
-        self.process_test_bool(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testByte" => {
-        self.process_test_byte(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testI32" => {
-        self.process_test_i32(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testI64" => {
-        self.process_test_i64(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testDouble" => {
-        self.process_test_double(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testBinary" => {
-        self.process_test_binary(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testStruct" => {
-        self.process_test_struct(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testNest" => {
-        self.process_test_nest(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testMap" => {
-        self.process_test_map(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testStringMap" => {
-        self.process_test_string_map(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testSet" => {
-        self.process_test_set(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testList" => {
-        self.process_test_list(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testEnum" => {
-        self.process_test_enum(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testTypedef" => {
-        self.process_test_typedef(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testMapMap" => {
-        self.process_test_map_map(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testInsanity" => {
-        self.process_test_insanity(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testMulti" => {
-        self.process_test_multi(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testException" => {
-        self.process_test_exception(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testMultiException" => {
-        self.process_test_multi_exception(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      "testOneway" => {
-        self.process_test_oneway(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      method => {
-        Err(
-          async_thrift::Error::Application(
-            ApplicationError::new(
-              ApplicationErrorKind::UnknownMethod,
-              format!("unknown method {}", method)
-            )
-          )
-        )
-      },
-    };
-    async_thrift::server::handle_process_result(&message_ident, res, o_prot).await
-  }
+impl<H: ThriftTestSyncHandler + Send + Sync> TAsyncProcessor for ThriftTestSyncProcessor<H> {
+    async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let message_ident = i_prot.read_message_begin().await?;
+        let res = match &*message_ident.name {
+            "testVoid" => {
+                self.process_test_void(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testString" => {
+                self.process_test_string(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testBool" => {
+                self.process_test_bool(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testByte" => {
+                self.process_test_byte(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testI32" => {
+                self.process_test_i32(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testI64" => {
+                self.process_test_i64(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testDouble" => {
+                self.process_test_double(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testBinary" => {
+                self.process_test_binary(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testStruct" => {
+                self.process_test_struct(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testNest" => {
+                self.process_test_nest(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testMap" => {
+                self.process_test_map(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testStringMap" => {
+                self.process_test_string_map(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testSet" => {
+                self.process_test_set(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testList" => {
+                self.process_test_list(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testEnum" => {
+                self.process_test_enum(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testTypedef" => {
+                self.process_test_typedef(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testMapMap" => {
+                self.process_test_map_map(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testInsanity" => {
+                self.process_test_insanity(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testMulti" => {
+                self.process_test_multi(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testException" => {
+                self.process_test_exception(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testMultiException" => {
+                self.process_test_multi_exception(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            "testOneway" => {
+                self.process_test_oneway(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            method => {
+                Err(
+                    async_thrift::Error::Application(
+                        ApplicationError::new(
+                            ApplicationErrorKind::UnknownMethod,
+                            format!("unknown method {}", method),
+                        )
+                    )
+                )
+            }
+        };
+        async_thrift::server::handle_process_result(&message_ident, res, o_prot).await
+    }
 }
 
 //
@@ -4874,35 +4880,34 @@ impl <H: ThriftTestSyncHandler + Send + Sync> TAsyncProcessor for ThriftTestSync
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct ThriftTestTestVoidArgs {
-}
+struct ThriftTestTestVoidArgs {}
 
 impl ThriftTestTestVoidArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestVoidArgs> {
-    i_prot.read_struct_begin().await?;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestVoidArgs> {
+        i_prot.read_struct_begin().await?;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestVoidArgs {};
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestVoidArgs {};
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testVoid_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testVoid_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -4910,38 +4915,37 @@ impl ThriftTestTestVoidArgs {
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct ThriftTestTestVoidResult {
-}
+struct ThriftTestTestVoidResult {}
 
 impl ThriftTestTestVoidResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestVoidResult> {
-    i_prot.read_struct_begin().await?;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestVoidResult> {
+        i_prot.read_struct_begin().await?;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestVoidResult {};
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestVoidResult {};
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestVoidResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<()> {
-    Ok(())
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestVoidResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
+    fn ok_or(self) -> async_thrift::Result<()> {
+        Ok(())
+    }
 }
 
 //
@@ -4950,46 +4954,46 @@ impl ThriftTestTestVoidResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestStringArgs {
-  thing: String,
+    thing: String,
 }
 
 impl ThriftTestTestStringArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestStringArgs.thing", &f_1)?;
+        let ret = ThriftTestTestStringArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestStringArgs.thing", &f_1)?;
-    let ret = ThriftTestTestStringArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testString_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::String, 1)).await?;
-    o_prot.write_string(&self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testString_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::String, 1)).await?;
+        o_prot.write_string(&self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -4998,64 +5002,64 @@ impl ThriftTestTestStringArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestStringResult {
-  result_value: Option<String>,
+    result_value: Option<String>,
 }
 
 impl ThriftTestTestStringResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_string().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_string().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestStringResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestStringResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestStringResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::String, 0)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestStringResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::String, 0)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<String> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestString"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<String> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestString",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5064,46 +5068,46 @@ impl ThriftTestTestStringResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestBoolArgs {
-  thing: bool,
+    thing: bool,
 }
 
 impl ThriftTestTestBoolArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBoolArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<bool> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_bool().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBoolArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<bool> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_bool().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestBoolArgs.thing", &f_1)?;
+        let ret = ThriftTestTestBoolArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestBoolArgs.thing", &f_1)?;
-    let ret = ThriftTestTestBoolArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testBool_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Bool, 1)).await?;
-    o_prot.write_bool(self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testBool_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Bool, 1)).await?;
+        o_prot.write_bool(self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5112,64 +5116,64 @@ impl ThriftTestTestBoolArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestBoolResult {
-  result_value: Option<bool>,
+    result_value: Option<bool>,
 }
 
 impl ThriftTestTestBoolResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBoolResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<bool> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_bool().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBoolResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<bool> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_bool().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestBoolResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestBoolResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestBoolResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Bool, 0)).await?;
-      o_prot.write_bool(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestBoolResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Bool, 0)).await?;
+            o_prot.write_bool(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<bool> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestBool"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<bool> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestBool",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5178,46 +5182,46 @@ impl ThriftTestTestBoolResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestByteArgs {
-  thing: i8,
+    thing: i8,
 }
 
 impl ThriftTestTestByteArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestByteArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i8> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i8().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestByteArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i8> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i8().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestByteArgs.thing", &f_1)?;
+        let ret = ThriftTestTestByteArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestByteArgs.thing", &f_1)?;
-    let ret = ThriftTestTestByteArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testByte_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I08, 1)).await?;
-    o_prot.write_i8(self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testByte_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I08, 1)).await?;
+        o_prot.write_i8(self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5226,64 +5230,64 @@ impl ThriftTestTestByteArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestByteResult {
-  result_value: Option<i8>,
+    result_value: Option<i8>,
 }
 
 impl ThriftTestTestByteResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestByteResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<i8> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_i8().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestByteResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<i8> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_i8().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestByteResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestByteResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestByteResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I08, 0)).await?;
-      o_prot.write_i8(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestByteResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I08, 0)).await?;
+            o_prot.write_i8(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<i8> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestByte"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<i8> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestByte",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5292,46 +5296,46 @@ impl ThriftTestTestByteResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestI32Args {
-  thing: i32,
+    thing: i32,
 }
 
 impl ThriftTestTestI32Args {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI32Args> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI32Args> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i32> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i32().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestI32Args.thing", &f_1)?;
+        let ret = ThriftTestTestI32Args {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestI32Args.thing", &f_1)?;
-    let ret = ThriftTestTestI32Args {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testI32_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I32, 1)).await?;
-    o_prot.write_i32(self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testI32_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I32, 1)).await?;
+        o_prot.write_i32(self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5340,64 +5344,64 @@ impl ThriftTestTestI32Args {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestI32Result {
-  result_value: Option<i32>,
+    result_value: Option<i32>,
 }
 
 impl ThriftTestTestI32Result {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI32Result> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<i32> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_i32().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI32Result> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<i32> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_i32().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestI32Result {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestI32Result {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestI32Result");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I32, 0)).await?;
-      o_prot.write_i32(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestI32Result");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I32, 0)).await?;
+            o_prot.write_i32(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<i32> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestI32"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<i32> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestI32",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5406,46 +5410,46 @@ impl ThriftTestTestI32Result {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestI64Args {
-  thing: i64,
+    thing: i64,
 }
 
 impl ThriftTestTestI64Args {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI64Args> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i64> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i64().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI64Args> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i64> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i64().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestI64Args.thing", &f_1)?;
+        let ret = ThriftTestTestI64Args {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestI64Args.thing", &f_1)?;
-    let ret = ThriftTestTestI64Args {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testI64_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I64, 1)).await?;
-    o_prot.write_i64(self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testI64_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I64, 1)).await?;
+        o_prot.write_i64(self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5454,64 +5458,64 @@ impl ThriftTestTestI64Args {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestI64Result {
-  result_value: Option<i64>,
+    result_value: Option<i64>,
 }
 
 impl ThriftTestTestI64Result {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI64Result> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<i64> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_i64().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestI64Result> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<i64> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_i64().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestI64Result {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestI64Result {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestI64Result");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I64, 0)).await?;
-      o_prot.write_i64(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestI64Result");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I64, 0)).await?;
+            o_prot.write_i64(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<i64> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestI64"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<i64> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestI64",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5520,46 +5524,46 @@ impl ThriftTestTestI64Result {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestDoubleArgs {
-  thing: OrderedFloat<f64>,
+    thing: OrderedFloat<f64>,
 }
 
 impl ThriftTestTestDoubleArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestDoubleArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<OrderedFloat<f64>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = OrderedFloat::from(i_prot.read_double().await?);
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestDoubleArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<OrderedFloat<f64>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = OrderedFloat::from(i_prot.read_double().await?);
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestDoubleArgs.thing", &f_1)?;
+        let ret = ThriftTestTestDoubleArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestDoubleArgs.thing", &f_1)?;
-    let ret = ThriftTestTestDoubleArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testDouble_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Double, 1)).await?;
-    o_prot.write_double(self.thing.into()).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testDouble_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Double, 1)).await?;
+        o_prot.write_double(self.thing.into()).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5568,64 +5572,64 @@ impl ThriftTestTestDoubleArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestDoubleResult {
-  result_value: Option<OrderedFloat<f64>>,
+    result_value: Option<OrderedFloat<f64>>,
 }
 
 impl ThriftTestTestDoubleResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestDoubleResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<OrderedFloat<f64>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = OrderedFloat::from(i_prot.read_double().await?);
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestDoubleResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<OrderedFloat<f64>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = OrderedFloat::from(i_prot.read_double().await?);
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestDoubleResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestDoubleResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestDoubleResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Double, 0)).await?;
-      o_prot.write_double(fld_var.into()).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestDoubleResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Double, 0)).await?;
+            o_prot.write_double(fld_var.into()).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<OrderedFloat<f64>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestDouble"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<OrderedFloat<f64>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestDouble",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5634,46 +5638,46 @@ impl ThriftTestTestDoubleResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestBinaryArgs {
-  thing: Vec<u8>,
+    thing: Vec<u8>,
 }
 
 impl ThriftTestTestBinaryArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBinaryArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<u8>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_bytes().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBinaryArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<u8>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_bytes().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestBinaryArgs.thing", &f_1)?;
+        let ret = ThriftTestTestBinaryArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestBinaryArgs.thing", &f_1)?;
-    let ret = ThriftTestTestBinaryArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testBinary_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::String, 1)).await?;
-    o_prot.write_bytes(&self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testBinary_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::String, 1)).await?;
+        o_prot.write_bytes(&self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5682,64 +5686,64 @@ impl ThriftTestTestBinaryArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestBinaryResult {
-  result_value: Option<Vec<u8>>,
+    result_value: Option<Vec<u8>>,
 }
 
 impl ThriftTestTestBinaryResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBinaryResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Vec<u8>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_bytes().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestBinaryResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<Vec<u8>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_bytes().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestBinaryResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestBinaryResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestBinaryResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::String, 0)).await?;
-      o_prot.write_bytes(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestBinaryResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::String, 0)).await?;
+            o_prot.write_bytes(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<Vec<u8>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestBinary"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<Vec<u8>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestBinary",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5748,46 +5752,46 @@ impl ThriftTestTestBinaryResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestStructArgs {
-  thing: Xtruct,
+    thing: Xtruct,
 }
 
 impl ThriftTestTestStructArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStructArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Xtruct> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = Xtruct::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStructArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Xtruct> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = Xtruct::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestStructArgs.thing", &f_1)?;
+        let ret = ThriftTestTestStructArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestStructArgs.thing", &f_1)?;
-    let ret = ThriftTestTestStructArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testStruct_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Struct, 1)).await?;
-    self.thing.write_to_out_protocol(o_prot).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testStruct_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Struct, 1)).await?;
+        self.thing.write_to_out_protocol(o_prot).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5796,64 +5800,64 @@ impl ThriftTestTestStructArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestStructResult {
-  result_value: Option<Xtruct>,
+    result_value: Option<Xtruct>,
 }
 
 impl ThriftTestTestStructResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStructResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Xtruct> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = Xtruct::read_from_in_protocol(i_prot).await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStructResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<Xtruct> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = Xtruct::read_from_in_protocol(i_prot).await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestStructResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestStructResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestStructResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestStructResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<Xtruct> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestStruct"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<Xtruct> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestStruct",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5862,46 +5866,46 @@ impl ThriftTestTestStructResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestNestArgs {
-  thing: Xtruct2,
+    thing: Xtruct2,
 }
 
 impl ThriftTestTestNestArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestNestArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Xtruct2> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = Xtruct2::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestNestArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Xtruct2> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = Xtruct2::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestNestArgs.thing", &f_1)?;
+        let ret = ThriftTestTestNestArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestNestArgs.thing", &f_1)?;
-    let ret = ThriftTestTestNestArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testNest_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Struct, 1)).await?;
-    self.thing.write_to_out_protocol(o_prot).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testNest_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Struct, 1)).await?;
+        self.thing.write_to_out_protocol(o_prot).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -5910,64 +5914,64 @@ impl ThriftTestTestNestArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestNestResult {
-  result_value: Option<Xtruct2>,
+    result_value: Option<Xtruct2>,
 }
 
 impl ThriftTestTestNestResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestNestResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Xtruct2> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = Xtruct2::read_from_in_protocol(i_prot).await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestNestResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<Xtruct2> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = Xtruct2::read_from_in_protocol(i_prot).await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestNestResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestNestResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestNestResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestNestResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<Xtruct2> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestNest"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<Xtruct2> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestNest",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -5976,58 +5980,58 @@ impl ThriftTestTestNestResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMapArgs {
-  thing: BTreeMap<i32, i32>,
+    thing: BTreeMap<i32, i32>,
 }
 
 impl ThriftTestTestMapArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<BTreeMap<i32, i32>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<i32, i32> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_45 = i_prot.read_i32().await?;
-            let map_val_46 = i_prot.read_i32().await?;
-            val.insert(map_key_45, map_val_46);
-          }
-          i_prot.read_map_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<BTreeMap<i32, i32>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<i32, i32> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_45 = i_prot.read_i32().await?;
+                        let map_val_46 = i_prot.read_i32().await?;
+                        val.insert(map_key_45, map_val_46);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestMapArgs.thing", &f_1)?;
+        let ret = ThriftTestTestMapArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestMapArgs.thing", &f_1)?;
-    let ret = ThriftTestTestMapArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testMap_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Map, 1)).await?;
-    o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, self.thing.len() as i32)).await?;
-    for (k, v) in &self.thing {
-      o_prot.write_i32(*k).await?;
-      o_prot.write_i32(*v).await?;
-      o_prot.write_map_end().await?;
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testMap_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Map, 1)).await?;
+        o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, self.thing.len() as i32)).await?;
+        for (k, v) in &self.thing {
+            o_prot.write_i32(*k).await?;
+            o_prot.write_i32(*v).await?;
+            o_prot.write_map_end().await?;
+        }
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 //
@@ -6036,76 +6040,76 @@ impl ThriftTestTestMapArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMapResult {
-  result_value: Option<BTreeMap<i32, i32>>,
+    result_value: Option<BTreeMap<i32, i32>>,
 }
 
 impl ThriftTestTestMapResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<BTreeMap<i32, i32>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<i32, i32> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_47 = i_prot.read_i32().await?;
-            let map_val_48 = i_prot.read_i32().await?;
-            val.insert(map_key_47, map_val_48);
-          }
-          i_prot.read_map_end().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<BTreeMap<i32, i32>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<i32, i32> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_47 = i_prot.read_i32().await?;
+                        let map_val_48 = i_prot.read_i32().await?;
+                        val.insert(map_key_47, map_val_48);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestMapResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestMapResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestMapResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        o_prot.write_i32(*k).await?;
-        o_prot.write_i32(*v).await?;
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestMapResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                o_prot.write_i32(*k).await?;
+                o_prot.write_i32(*v).await?;
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<BTreeMap<i32, i32>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestMap"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<BTreeMap<i32, i32>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestMap",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -6114,58 +6118,58 @@ impl ThriftTestTestMapResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestStringMapArgs {
-  thing: BTreeMap<String, String>,
+    thing: BTreeMap<String, String>,
 }
 
 impl ThriftTestTestStringMapArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringMapArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<BTreeMap<String, String>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<String, String> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_49 = i_prot.read_string().await?;
-            let map_val_50 = i_prot.read_string().await?;
-            val.insert(map_key_49, map_val_50);
-          }
-          i_prot.read_map_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringMapArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<BTreeMap<String, String>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<String, String> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_49 = i_prot.read_string().await?;
+                        let map_val_50 = i_prot.read_string().await?;
+                        val.insert(map_key_49, map_val_50);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestStringMapArgs.thing", &f_1)?;
+        let ret = ThriftTestTestStringMapArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestStringMapArgs.thing", &f_1)?;
-    let ret = ThriftTestTestStringMapArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testStringMap_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Map, 1)).await?;
-    o_prot.write_map_begin(&TMapIdentifier::new(TType::String, TType::String, self.thing.len() as i32)).await?;
-    for (k, v) in &self.thing {
-      o_prot.write_string(k).await?;
-      o_prot.write_string(v).await?;
-      o_prot.write_map_end().await?;
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testStringMap_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Map, 1)).await?;
+        o_prot.write_map_begin(&TMapIdentifier::new(TType::String, TType::String, self.thing.len() as i32)).await?;
+        for (k, v) in &self.thing {
+            o_prot.write_string(k).await?;
+            o_prot.write_string(v).await?;
+            o_prot.write_map_end().await?;
+        }
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 //
@@ -6174,76 +6178,76 @@ impl ThriftTestTestStringMapArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestStringMapResult {
-  result_value: Option<BTreeMap<String, String>>,
+    result_value: Option<BTreeMap<String, String>>,
 }
 
 impl ThriftTestTestStringMapResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringMapResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<BTreeMap<String, String>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<String, String> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_51 = i_prot.read_string().await?;
-            let map_val_52 = i_prot.read_string().await?;
-            val.insert(map_key_51, map_val_52);
-          }
-          i_prot.read_map_end().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestStringMapResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<BTreeMap<String, String>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<String, String> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_51 = i_prot.read_string().await?;
+                        let map_val_52 = i_prot.read_string().await?;
+                        val.insert(map_key_51, map_val_52);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestStringMapResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestStringMapResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestStringMapResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::String, TType::String, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        o_prot.write_string(k).await?;
-        o_prot.write_string(v).await?;
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestStringMapResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::String, TType::String, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                o_prot.write_string(k).await?;
+                o_prot.write_string(v).await?;
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<BTreeMap<String, String>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestStringMap"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<BTreeMap<String, String>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestStringMap",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -6252,56 +6256,56 @@ impl ThriftTestTestStringMapResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestSetArgs {
-  thing: BTreeSet<i32>,
+    thing: BTreeSet<i32>,
 }
 
 impl ThriftTestTestSetArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestSetArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<BTreeSet<i32>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let set_ident = i_prot.read_set_begin().await?;
-          let mut val: BTreeSet<i32> = BTreeSet::new();
-          for _ in 0..set_ident.size {
-            let set_elem_53 = i_prot.read_i32().await?;
-            val.insert(set_elem_53);
-          }
-          i_prot.read_set_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestSetArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<BTreeSet<i32>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let set_ident = i_prot.read_set_begin().await?;
+                    let mut val: BTreeSet<i32> = BTreeSet::new();
+                    for _ in 0..set_ident.size {
+                        let set_elem_53 = i_prot.read_i32().await?;
+                        val.insert(set_elem_53);
+                    }
+                    i_prot.read_set_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestSetArgs.thing", &f_1)?;
+        let ret = ThriftTestTestSetArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestSetArgs.thing", &f_1)?;
-    let ret = ThriftTestTestSetArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testSet_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Set, 1)).await?;
-    o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, self.thing.len() as i32)).await?;
-    for e in &self.thing {
-      o_prot.write_i32(*e).await?;
-      o_prot.write_set_end().await?;
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testSet_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::Set, 1)).await?;
+        o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, self.thing.len() as i32)).await?;
+        for e in &self.thing {
+            o_prot.write_i32(*e).await?;
+            o_prot.write_set_end().await?;
+        }
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 //
@@ -6310,74 +6314,74 @@ impl ThriftTestTestSetArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestSetResult {
-  result_value: Option<BTreeSet<i32>>,
+    result_value: Option<BTreeSet<i32>>,
 }
 
 impl ThriftTestTestSetResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestSetResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<BTreeSet<i32>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let set_ident = i_prot.read_set_begin().await?;
-          let mut val: BTreeSet<i32> = BTreeSet::new();
-          for _ in 0..set_ident.size {
-            let set_elem_54 = i_prot.read_i32().await?;
-            val.insert(set_elem_54);
-          }
-          i_prot.read_set_end().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestSetResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<BTreeSet<i32>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let set_ident = i_prot.read_set_begin().await?;
+                    let mut val: BTreeSet<i32> = BTreeSet::new();
+                    for _ in 0..set_ident.size {
+                        let set_elem_54 = i_prot.read_i32().await?;
+                        val.insert(set_elem_54);
+                    }
+                    i_prot.read_set_end().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestSetResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestSetResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestSetResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Set, 0)).await?;
-      o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_i32(*e).await?;
-        o_prot.write_set_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestSetResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Set, 0)).await?;
+            o_prot.write_set_begin(&TSetIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_i32(*e).await?;
+                o_prot.write_set_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<BTreeSet<i32>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestSet"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<BTreeSet<i32>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestSet",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -6386,56 +6390,56 @@ impl ThriftTestTestSetResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestListArgs {
-  thing: Vec<i32>,
+    thing: Vec<i32>,
 }
 
 impl ThriftTestTestListArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestListArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Vec<i32>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_55 = i_prot.read_i32().await?;
-            val.push(list_elem_55);
-          }
-          i_prot.read_list_end().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestListArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Vec<i32>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_55 = i_prot.read_i32().await?;
+                        val.push(list_elem_55);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestListArgs.thing", &f_1)?;
+        let ret = ThriftTestTestListArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestListArgs.thing", &f_1)?;
-    let ret = ThriftTestTestListArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testList_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::List, 1)).await?;
-    o_prot.write_list_begin(&TListIdentifier::new(TType::I32, self.thing.len() as i32)).await?;
-    for e in &self.thing {
-      o_prot.write_i32(*e).await?;
-      o_prot.write_list_end().await?;
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testList_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::List, 1)).await?;
+        o_prot.write_list_begin(&TListIdentifier::new(TType::I32, self.thing.len() as i32)).await?;
+        for e in &self.thing {
+            o_prot.write_i32(*e).await?;
+            o_prot.write_list_end().await?;
+        }
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 //
@@ -6444,74 +6448,74 @@ impl ThriftTestTestListArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestListResult {
-  result_value: Option<Vec<i32>>,
+    result_value: Option<Vec<i32>>,
 }
 
 impl ThriftTestTestListResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestListResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Vec<i32>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let list_ident = i_prot.read_list_begin().await?;
-          let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
-          for _ in 0..list_ident.size {
-            let list_elem_56 = i_prot.read_i32().await?;
-            val.push(list_elem_56);
-          }
-          i_prot.read_list_end().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestListResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<Vec<i32>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let list_ident = i_prot.read_list_begin().await?;
+                    let mut val: Vec<i32> = Vec::with_capacity(list_ident.size as usize);
+                    for _ in 0..list_ident.size {
+                        let list_elem_56 = i_prot.read_i32().await?;
+                        val.push(list_elem_56);
+                    }
+                    i_prot.read_list_end().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestListResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestListResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestListResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::List, 0)).await?;
-      o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
-      for e in fld_var {
-        o_prot.write_i32(*e).await?;
-        o_prot.write_list_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestListResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::List, 0)).await?;
+            o_prot.write_list_begin(&TListIdentifier::new(TType::I32, fld_var.len() as i32)).await?;
+            for e in fld_var {
+                o_prot.write_i32(*e).await?;
+                o_prot.write_list_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<Vec<i32>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestList"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<Vec<i32>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestList",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -6520,46 +6524,46 @@ impl ThriftTestTestListResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestEnumArgs {
-  thing: Numberz,
+    thing: Numberz,
 }
 
 impl ThriftTestTestEnumArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestEnumArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Numberz> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = Numberz::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestEnumArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Numberz> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = Numberz::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestEnumArgs.thing", &f_1)?;
+        let ret = ThriftTestTestEnumArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestEnumArgs.thing", &f_1)?;
-    let ret = ThriftTestTestEnumArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testEnum_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I32, 1)).await?;
-    self.thing.write_to_out_protocol(o_prot).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testEnum_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I32, 1)).await?;
+        self.thing.write_to_out_protocol(o_prot).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -6568,64 +6572,64 @@ impl ThriftTestTestEnumArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestEnumResult {
-  result_value: Option<Numberz>,
+    result_value: Option<Numberz>,
 }
 
 impl ThriftTestTestEnumResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestEnumResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Numberz> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = Numberz::read_from_in_protocol(i_prot).await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestEnumResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<Numberz> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = Numberz::read_from_in_protocol(i_prot).await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestEnumResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestEnumResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestEnumResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I32, 0)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestEnumResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I32, 0)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<Numberz> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestEnum"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<Numberz> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestEnum",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -6634,46 +6638,46 @@ impl ThriftTestTestEnumResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestTypedefArgs {
-  thing: UserId,
+    thing: UserId,
 }
 
 impl ThriftTestTestTypedefArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestTypedefArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<UserId> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i64().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestTypedefArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<UserId> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i64().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestTypedefArgs.thing", &f_1)?;
+        let ret = ThriftTestTestTypedefArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestTypedefArgs.thing", &f_1)?;
-    let ret = ThriftTestTestTypedefArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testTypedef_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I64, 1)).await?;
-    o_prot.write_i64(self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testTypedef_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::I64, 1)).await?;
+        o_prot.write_i64(self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -6682,64 +6686,64 @@ impl ThriftTestTestTypedefArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestTypedefResult {
-  result_value: Option<UserId>,
+    result_value: Option<UserId>,
 }
 
 impl ThriftTestTestTypedefResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestTypedefResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<UserId> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_i64().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestTypedefResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<UserId> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_i64().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestTypedefResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestTypedefResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestTypedefResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I64, 0)).await?;
-      o_prot.write_i64(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestTypedefResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::I64, 0)).await?;
+            o_prot.write_i64(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<UserId> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestTypedef"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<UserId> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestTypedef",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -6748,46 +6752,46 @@ impl ThriftTestTestTypedefResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMapMapArgs {
-  hello: i32,
+    hello: i32,
 }
 
 impl ThriftTestTestMapMapArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapMapArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapMapArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i32> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i32().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestMapMapArgs.hello", &f_1)?;
+        let ret = ThriftTestTestMapMapArgs {
+            hello: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestMapMapArgs.hello", &f_1)?;
-    let ret = ThriftTestTestMapMapArgs {
-      hello: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testMapMap_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("hello", TType::I32, 1)).await?;
-    o_prot.write_i32(self.hello).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testMapMap_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("hello", TType::I32, 1)).await?;
+        o_prot.write_i32(self.hello).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -6796,88 +6800,88 @@ impl ThriftTestTestMapMapArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMapMapResult {
-  result_value: Option<BTreeMap<i32, BTreeMap<i32, i32>>>,
+    result_value: Option<BTreeMap<i32, BTreeMap<i32, i32>>>,
 }
 
 impl ThriftTestTestMapMapResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapMapResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<BTreeMap<i32, BTreeMap<i32, i32>>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<i32, BTreeMap<i32, i32>> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_57 = i_prot.read_i32().await?;
-            let map_ident = i_prot.read_map_begin().await?;
-            let mut map_val_58: BTreeMap<i32, i32> = BTreeMap::new();
-            for _ in 0..map_ident.size {
-              let map_key_59 = i_prot.read_i32().await?;
-              let map_val_60 = i_prot.read_i32().await?;
-              map_val_58.insert(map_key_59, map_val_60);
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMapMapResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<BTreeMap<i32, BTreeMap<i32, i32>>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
             }
-            i_prot.read_map_end().await?;
-            val.insert(map_key_57, map_val_58);
-          }
-          i_prot.read_map_end().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestMapMapResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestMapMapResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Map, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        o_prot.write_i32(*k).await?;
-        o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, v.len() as i32)).await?;
-        for (k, v) in v {
-          o_prot.write_i32(*k).await?;
-          o_prot.write_i32(*v).await?;
-          o_prot.write_map_end().await?;
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<i32, BTreeMap<i32, i32>> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_57 = i_prot.read_i32().await?;
+                        let map_ident = i_prot.read_map_begin().await?;
+                        let mut map_val_58: BTreeMap<i32, i32> = BTreeMap::new();
+                        for _ in 0..map_ident.size {
+                            let map_key_59 = i_prot.read_i32().await?;
+                            let map_val_60 = i_prot.read_i32().await?;
+                            map_val_58.insert(map_key_59, map_val_60);
+                        }
+                        i_prot.read_map_end().await?;
+                        val.insert(map_key_57, map_val_58);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
         }
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestMapMapResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestMapMap"
-          )
-        )
-      )
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestMapMapResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Map, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                o_prot.write_i32(*k).await?;
+                o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::I32, v.len() as i32)).await?;
+                for (k, v) in v {
+                    o_prot.write_i32(*k).await?;
+                    o_prot.write_i32(*v).await?;
+                    o_prot.write_map_end().await?;
+                }
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-  }
+    fn ok_or(self) -> async_thrift::Result<BTreeMap<i32, BTreeMap<i32, i32>>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestMapMap",
+                    )
+                )
+            )
+        }
+    }
 }
 
 //
@@ -6886,46 +6890,46 @@ impl ThriftTestTestMapMapResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestInsanityArgs {
-  argument: Insanity,
+    argument: Insanity,
 }
 
 impl ThriftTestTestInsanityArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestInsanityArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Insanity> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = Insanity::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestInsanityArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Insanity> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = Insanity::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestInsanityArgs.argument", &f_1)?;
+        let ret = ThriftTestTestInsanityArgs {
+            argument: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestInsanityArgs.argument", &f_1)?;
-    let ret = ThriftTestTestInsanityArgs {
-      argument: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testInsanity_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("argument", TType::Struct, 1)).await?;
-    self.argument.write_to_out_protocol(o_prot).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testInsanity_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("argument", TType::Struct, 1)).await?;
+        self.argument.write_to_out_protocol(o_prot).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -6934,88 +6938,88 @@ impl ThriftTestTestInsanityArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestInsanityResult {
-  result_value: Option<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>>,
+    result_value: Option<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>>,
 }
 
 impl ThriftTestTestInsanityResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestInsanityResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<UserId, BTreeMap<Numberz, Insanity>> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_61 = i_prot.read_i64().await?;
-            let map_ident = i_prot.read_map_begin().await?;
-            let mut map_val_62: BTreeMap<Numberz, Insanity> = BTreeMap::new();
-            for _ in 0..map_ident.size {
-              let map_key_63 = Numberz::read_from_in_protocol(i_prot).await?;
-              let map_val_64 = Insanity::read_from_in_protocol(i_prot).await?;
-              map_val_62.insert(map_key_63, map_val_64);
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestInsanityResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
             }
-            i_prot.read_map_end().await?;
-            val.insert(map_key_61, map_val_62);
-          }
-          i_prot.read_map_end().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
-    }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestInsanityResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestInsanityResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
-      o_prot.write_map_begin(&TMapIdentifier::new(TType::I64, TType::Map, fld_var.len() as i32)).await?;
-      for (k, v) in fld_var {
-        o_prot.write_i64(*k).await?;
-        o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Struct, v.len() as i32)).await?;
-        for (k, v) in v {
-          k.write_to_out_protocol(o_prot).await?;
-          v.write_to_out_protocol(o_prot).await?;
-          o_prot.write_map_end().await?;
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<UserId, BTreeMap<Numberz, Insanity>> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_61 = i_prot.read_i64().await?;
+                        let map_ident = i_prot.read_map_begin().await?;
+                        let mut map_val_62: BTreeMap<Numberz, Insanity> = BTreeMap::new();
+                        for _ in 0..map_ident.size {
+                            let map_key_63 = Numberz::read_from_in_protocol(i_prot).await?;
+                            let map_val_64 = Insanity::read_from_in_protocol(i_prot).await?;
+                            map_val_62.insert(map_key_63, map_val_64);
+                        }
+                        i_prot.read_map_end().await?;
+                        val.insert(map_key_61, map_val_62);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
         }
-        o_prot.write_map_end().await?;
-      }
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestInsanityResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestInsanity"
-          )
-        )
-      )
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestInsanityResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Map, 0)).await?;
+            o_prot.write_map_begin(&TMapIdentifier::new(TType::I64, TType::Map, fld_var.len() as i32)).await?;
+            for (k, v) in fld_var {
+                o_prot.write_i64(*k).await?;
+                o_prot.write_map_begin(&TMapIdentifier::new(TType::I32, TType::Struct, v.len() as i32)).await?;
+                for (k, v) in v {
+                    k.write_to_out_protocol(o_prot).await?;
+                    v.write_to_out_protocol(o_prot).await?;
+                    o_prot.write_map_end().await?;
+                }
+                o_prot.write_map_end().await?;
+            }
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-  }
+    fn ok_or(self) -> async_thrift::Result<BTreeMap<UserId, BTreeMap<Numberz, Insanity>>> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestInsanity",
+                    )
+                )
+            )
+        }
+    }
 }
 
 //
@@ -7024,113 +7028,113 @@ impl ThriftTestTestInsanityResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMultiArgs {
-  arg0: i8,
-  arg1: i32,
-  arg2: i64,
-  arg3: BTreeMap<i16, String>,
-  arg4: Numberz,
-  arg5: UserId,
+    arg0: i8,
+    arg1: i32,
+    arg2: i64,
+    arg3: BTreeMap<i16, String>,
+    arg4: Numberz,
+    arg5: UserId,
 }
 
 impl ThriftTestTestMultiArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i8> = None;
-    let mut f_2: Option<i32> = None;
-    let mut f_3: Option<i64> = None;
-    let mut f_4: Option<BTreeMap<i16, String>> = None;
-    let mut f_5: Option<Numberz> = None;
-    let mut f_6: Option<UserId> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i8().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_i32().await?;
-          f_2 = Some(val);
-        },
-        3 => {
-          let val = i_prot.read_i64().await?;
-          f_3 = Some(val);
-        },
-        4 => {
-          let map_ident = i_prot.read_map_begin().await?;
-          let mut val: BTreeMap<i16, String> = BTreeMap::new();
-          for _ in 0..map_ident.size {
-            let map_key_65 = i_prot.read_i16().await?;
-            let map_val_66 = i_prot.read_string().await?;
-            val.insert(map_key_65, map_val_66);
-          }
-          i_prot.read_map_end().await?;
-          f_4 = Some(val);
-        },
-        5 => {
-          let val = Numberz::read_from_in_protocol(i_prot).await?;
-          f_5 = Some(val);
-        },
-        6 => {
-          let val = i_prot.read_i64().await?;
-          f_6 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i8> = None;
+        let mut f_2: Option<i32> = None;
+        let mut f_3: Option<i64> = None;
+        let mut f_4: Option<BTreeMap<i16, String>> = None;
+        let mut f_5: Option<Numberz> = None;
+        let mut f_6: Option<UserId> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i8().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_i32().await?;
+                    f_2 = Some(val);
+                }
+                3 => {
+                    let val = i_prot.read_i64().await?;
+                    f_3 = Some(val);
+                }
+                4 => {
+                    let map_ident = i_prot.read_map_begin().await?;
+                    let mut val: BTreeMap<i16, String> = BTreeMap::new();
+                    for _ in 0..map_ident.size {
+                        let map_key_65 = i_prot.read_i16().await?;
+                        let map_val_66 = i_prot.read_string().await?;
+                        val.insert(map_key_65, map_val_66);
+                    }
+                    i_prot.read_map_end().await?;
+                    f_4 = Some(val);
+                }
+                5 => {
+                    let val = Numberz::read_from_in_protocol(i_prot).await?;
+                    f_5 = Some(val);
+                }
+                6 => {
+                    let val = i_prot.read_i64().await?;
+                    f_6 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestMultiArgs.arg0", &f_1)?;
+        verify_required_field_exists("ThriftTestTestMultiArgs.arg1", &f_2)?;
+        verify_required_field_exists("ThriftTestTestMultiArgs.arg2", &f_3)?;
+        verify_required_field_exists("ThriftTestTestMultiArgs.arg3", &f_4)?;
+        verify_required_field_exists("ThriftTestTestMultiArgs.arg4", &f_5)?;
+        verify_required_field_exists("ThriftTestTestMultiArgs.arg5", &f_6)?;
+        let ret = ThriftTestTestMultiArgs {
+            arg0: f_1.expect("auto-generated code should have checked for presence of required fields"),
+            arg1: f_2.expect("auto-generated code should have checked for presence of required fields"),
+            arg2: f_3.expect("auto-generated code should have checked for presence of required fields"),
+            arg3: f_4.expect("auto-generated code should have checked for presence of required fields"),
+            arg4: f_5.expect("auto-generated code should have checked for presence of required fields"),
+            arg5: f_6.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestMultiArgs.arg0", &f_1)?;
-    verify_required_field_exists("ThriftTestTestMultiArgs.arg1", &f_2)?;
-    verify_required_field_exists("ThriftTestTestMultiArgs.arg2", &f_3)?;
-    verify_required_field_exists("ThriftTestTestMultiArgs.arg3", &f_4)?;
-    verify_required_field_exists("ThriftTestTestMultiArgs.arg4", &f_5)?;
-    verify_required_field_exists("ThriftTestTestMultiArgs.arg5", &f_6)?;
-    let ret = ThriftTestTestMultiArgs {
-      arg0: f_1.expect("auto-generated code should have checked for presence of required fields"),
-      arg1: f_2.expect("auto-generated code should have checked for presence of required fields"),
-      arg2: f_3.expect("auto-generated code should have checked for presence of required fields"),
-      arg3: f_4.expect("auto-generated code should have checked for presence of required fields"),
-      arg4: f_5.expect("auto-generated code should have checked for presence of required fields"),
-      arg5: f_6.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testMulti_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg0", TType::I08, 1)).await?;
-    o_prot.write_i8(self.arg0).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg1", TType::I32, 2)).await?;
-    o_prot.write_i32(self.arg1).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg2", TType::I64, 3)).await?;
-    o_prot.write_i64(self.arg2).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg3", TType::Map, 4)).await?;
-    o_prot.write_map_begin(&TMapIdentifier::new(TType::I16, TType::String, self.arg3.len() as i32)).await?;
-    for (k, v) in &self.arg3 {
-      o_prot.write_i16(*k).await?;
-      o_prot.write_string(v).await?;
-      o_prot.write_map_end().await?;
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testMulti_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg0", TType::I08, 1)).await?;
+        o_prot.write_i8(self.arg0).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg1", TType::I32, 2)).await?;
+        o_prot.write_i32(self.arg1).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg2", TType::I64, 3)).await?;
+        o_prot.write_i64(self.arg2).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg3", TType::Map, 4)).await?;
+        o_prot.write_map_begin(&TMapIdentifier::new(TType::I16, TType::String, self.arg3.len() as i32)).await?;
+        for (k, v) in &self.arg3 {
+            o_prot.write_i16(*k).await?;
+            o_prot.write_string(v).await?;
+            o_prot.write_map_end().await?;
+        }
+        o_prot.write_field_end().await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg4", TType::I32, 5)).await?;
+        self.arg4.write_to_out_protocol(o_prot).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg5", TType::I64, 6)).await?;
+        o_prot.write_i64(self.arg5).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_end().await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg4", TType::I32, 5)).await?;
-    self.arg4.write_to_out_protocol(o_prot).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg5", TType::I64, 6)).await?;
-    o_prot.write_i64(self.arg5).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
 }
 
 //
@@ -7139,64 +7143,64 @@ impl ThriftTestTestMultiArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMultiResult {
-  result_value: Option<Xtruct>,
+    result_value: Option<Xtruct>,
 }
 
 impl ThriftTestTestMultiResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Xtruct> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = Xtruct::read_from_in_protocol(i_prot).await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<Xtruct> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = Xtruct::read_from_in_protocol(i_prot).await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestMultiResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestMultiResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestMultiResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestMultiResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<Xtruct> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestMulti"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<Xtruct> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestMulti",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 
 //
@@ -7205,46 +7209,46 @@ impl ThriftTestTestMultiResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestExceptionArgs {
-  arg: String,
+    arg: String,
 }
 
 impl ThriftTestTestExceptionArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestExceptionArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestExceptionArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestExceptionArgs.arg", &f_1)?;
+        let ret = ThriftTestTestExceptionArgs {
+            arg: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestExceptionArgs.arg", &f_1)?;
-    let ret = ThriftTestTestExceptionArgs {
-      arg: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testException_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg", TType::String, 1)).await?;
-    o_prot.write_string(&self.arg).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testException_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg", TType::String, 1)).await?;
+        o_prot.write_string(&self.arg).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -7253,57 +7257,57 @@ impl ThriftTestTestExceptionArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestExceptionResult {
-  err1: Option<Xception>,
+    err1: Option<Xception>,
 }
 
 impl ThriftTestTestExceptionResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestExceptionResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<Xception> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = Xception::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestExceptionResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<Xception> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = Xception::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestExceptionResult {
+            err1: f_1,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestExceptionResult {
-      err1: f_1,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestExceptionResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.err1 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("err1", TType::Struct, 1)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestExceptionResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.err1 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("err1", TType::Struct, 1)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<()> {
-    if self.err1.is_some() {
-      Err(async_thrift::Error::User(Box::new(self.err1.unwrap())))
-    } else {
-      Ok(())
+    fn ok_or(self) -> async_thrift::Result<()> {
+        if self.err1.is_some() {
+            Err(async_thrift::Error::User(Box::new(self.err1.unwrap())))
+        } else {
+            Ok(())
+        }
     }
-  }
 }
 
 //
@@ -7312,57 +7316,57 @@ impl ThriftTestTestExceptionResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMultiExceptionArgs {
-  arg0: String,
-  arg1: String,
+    arg0: String,
+    arg1: String,
 }
 
 impl ThriftTestTestMultiExceptionArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiExceptionArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = None;
-    let mut f_2: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = i_prot.read_string().await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiExceptionArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = None;
+        let mut f_2: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = i_prot.read_string().await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestMultiExceptionArgs.arg0", &f_1)?;
+        verify_required_field_exists("ThriftTestTestMultiExceptionArgs.arg1", &f_2)?;
+        let ret = ThriftTestTestMultiExceptionArgs {
+            arg0: f_1.expect("auto-generated code should have checked for presence of required fields"),
+            arg1: f_2.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestMultiExceptionArgs.arg0", &f_1)?;
-    verify_required_field_exists("ThriftTestTestMultiExceptionArgs.arg1", &f_2)?;
-    let ret = ThriftTestTestMultiExceptionArgs {
-      arg0: f_1.expect("auto-generated code should have checked for presence of required fields"),
-      arg1: f_2.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testMultiException_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg0", TType::String, 1)).await?;
-    o_prot.write_string(&self.arg0).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("arg1", TType::String, 2)).await?;
-    o_prot.write_string(&self.arg1).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testMultiException_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg0", TType::String, 1)).await?;
+        o_prot.write_string(&self.arg0).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("arg1", TType::String, 2)).await?;
+        o_prot.write_string(&self.arg1).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -7371,98 +7375,98 @@ impl ThriftTestTestMultiExceptionArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestMultiExceptionResult {
-  result_value: Option<Xtruct>,
-  err1: Option<Xception>,
-  err2: Option<Xception2>,
+    result_value: Option<Xtruct>,
+    err1: Option<Xception>,
+    err2: Option<Xception2>,
 }
 
 impl ThriftTestTestMultiExceptionResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiExceptionResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<Xtruct> = None;
-    let mut f_1: Option<Xception> = None;
-    let mut f_2: Option<Xception2> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = Xtruct::read_from_in_protocol(i_prot).await?;
-          f_0 = Some(val);
-        },
-        1 => {
-          let val = Xception::read_from_in_protocol(i_prot).await?;
-          f_1 = Some(val);
-        },
-        2 => {
-          let val = Xception2::read_from_in_protocol(i_prot).await?;
-          f_2 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestMultiExceptionResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<Xtruct> = None;
+        let mut f_1: Option<Xception> = None;
+        let mut f_2: Option<Xception2> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = Xtruct::read_from_in_protocol(i_prot).await?;
+                    f_0 = Some(val);
+                }
+                1 => {
+                    let val = Xception::read_from_in_protocol(i_prot).await?;
+                    f_1 = Some(val);
+                }
+                2 => {
+                    let val = Xception2::read_from_in_protocol(i_prot).await?;
+                    f_2 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = ThriftTestTestMultiExceptionResult {
+            result_value: f_0,
+            err1: f_1,
+            err2: f_2,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = ThriftTestTestMultiExceptionResult {
-      result_value: f_0,
-      err1: f_1,
-      err2: f_2,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ThriftTestTestMultiExceptionResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ThriftTestTestMultiExceptionResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::Struct, 0)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.err1 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("err1", TType::Struct, 1)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        if let Some(ref fld_var) = self.err2 {
+            o_prot.write_field_begin(&TFieldIdentifier::new("err2", TType::Struct, 2)).await?;
+            fld_var.write_to_out_protocol(o_prot).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    if let Some(ref fld_var) = self.err1 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("err1", TType::Struct, 1)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    fn ok_or(self) -> async_thrift::Result<Xtruct> {
+        if self.err1.is_some() {
+            Err(async_thrift::Error::User(Box::new(self.err1.unwrap())))
+        } else if self.err2.is_some() {
+            Err(async_thrift::Error::User(Box::new(self.err2.unwrap())))
+        } else if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for ThriftTestTestMultiException",
+                    )
+                )
+            )
+        }
     }
-    if let Some(ref fld_var) = self.err2 {
-      o_prot.write_field_begin(&TFieldIdentifier::new("err2", TType::Struct, 2)).await?;
-      fld_var.write_to_out_protocol(o_prot).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
-    }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<Xtruct> {
-    if self.err1.is_some() {
-      Err(async_thrift::Error::User(Box::new(self.err1.unwrap())))
-    } else if self.err2.is_some() {
-      Err(async_thrift::Error::User(Box::new(self.err2.unwrap())))
-    } else if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for ThriftTestTestMultiException"
-          )
-        )
-      )
-    }
-  }
 }
 
 //
@@ -7471,46 +7475,46 @@ impl ThriftTestTestMultiExceptionResult {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct ThriftTestTestOnewayArgs {
-  seconds_to_sleep: i32,
+    seconds_to_sleep: i32,
 }
 
 impl ThriftTestTestOnewayArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestOnewayArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<i32> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_i32().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<ThriftTestTestOnewayArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<i32> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_i32().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("ThriftTestTestOnewayArgs.seconds_to_sleep", &f_1)?;
+        let ret = ThriftTestTestOnewayArgs {
+            seconds_to_sleep: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("ThriftTestTestOnewayArgs.seconds_to_sleep", &f_1)?;
-    let ret = ThriftTestTestOnewayArgs {
-      seconds_to_sleep: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("testOneway_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("secondsToSleep", TType::I32, 1)).await?;
-    o_prot.write_i32(self.seconds_to_sleep).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("testOneway_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("secondsToSleep", TType::I32, 1)).await?;
+        o_prot.write_i32(self.seconds_to_sleep).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -7519,64 +7523,67 @@ impl ThriftTestTestOnewayArgs {
 
 #[async_trait]
 pub trait TSecondServiceSyncClient {
-  /// Prints 'testString("%s")' with thing as '%s'
+    /// Prints 'testString("%s")' with thing as '%s'
   /// @param string thing - the string to print
   /// @return string - returns the string 'thing'
-  async fn secondtest_string(&mut self, thing: String) -> async_thrift::Result<String>;
+    async fn secondtest_string(&mut self, thing: String) -> async_thrift::Result<String>;
 }
 
 pub trait TSecondServiceSyncClientMarker {}
 
 pub struct SecondServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
-  _i_prot: IP,
-  _o_prot: OP,
-  _sequence_number: i32,
+    _i_prot: IP,
+    _o_prot: OP,
+    _sequence_number: i32,
 }
 
-impl <IP, OP> SecondServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
-  pub fn new(input_protocol: IP, output_protocol: OP) -> SecondServiceSyncClient<IP, OP> {
-    SecondServiceSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
-  }
+impl<IP, OP> SecondServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+    pub fn new(input_protocol: IP, output_protocol: OP) -> SecondServiceSyncClient<IP, OP> {
+        SecondServiceSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
+    }
 }
 
-impl <IP, OP> TThriftClient for SecondServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
-  fn i_prot_mut(&mut self) -> &mut (dyn TAsyncInputProtocol + Send) { &mut self._i_prot }
-  fn o_prot_mut(&mut self) -> &mut (dyn TAsyncOutputProtocol + Send) { &mut self._o_prot }
-  fn sequence_number(&self) -> i32 { self._sequence_number }
-  fn increment_sequence_number(&mut self) -> i32 { self._sequence_number += 1; self._sequence_number }
+impl<IP, OP> TThriftClient for SecondServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+    fn i_prot_mut(&mut self) -> &mut (dyn TAsyncInputProtocol + Send) { &mut self._i_prot }
+    fn o_prot_mut(&mut self) -> &mut (dyn TAsyncOutputProtocol + Send) { &mut self._o_prot }
+    fn sequence_number(&self) -> i32 { self._sequence_number }
+    fn increment_sequence_number(&mut self) -> i32 {
+        self._sequence_number += 1;
+        self._sequence_number
+    }
 }
 
-impl <IP, OP> TSecondServiceSyncClientMarker for SecondServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
+impl<IP, OP> TSecondServiceSyncClientMarker for SecondServiceSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
 
 #[async_trait]
-impl <C: TThriftClient + TSecondServiceSyncClientMarker+ Send> TSecondServiceSyncClient for C {
-  async fn secondtest_string(&mut self, thing: String) -> async_thrift::Result<String> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Call, self.sequence_number());
-        let call_args = SecondServiceSecondtestStringArgs { thing: thing };
-        self.o_prot_mut().write_message_begin(&message_ident).await?;
-        call_args.write_to_out_protocol(self.o_prot_mut()).await?;
-        self.o_prot_mut().write_message_end().await?;
-        self.o_prot_mut().flush().await
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin().await?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("secondtestString", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
-        self.i_prot_mut().read_message_end().await?;
-        return Err(async_thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = SecondServiceSecondtestStringResult::read_from_in_protocol(self.i_prot_mut()).await?;
-      self.i_prot_mut().read_message_end().await?;
-      result.ok_or()
+impl<C: TThriftClient + TSecondServiceSyncClientMarker + Send> TSecondServiceSyncClient for C {
+    async fn secondtest_string(&mut self, thing: String) -> async_thrift::Result<String> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Call, self.sequence_number());
+                let call_args = SecondServiceSecondtestStringArgs { thing: thing };
+                self.o_prot_mut().write_message_begin(&message_ident).await?;
+                call_args.write_to_out_protocol(self.o_prot_mut()).await?;
+                self.o_prot_mut().write_message_end().await?;
+                self.o_prot_mut().flush().await
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin().await?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("secondtestString", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = async_thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
+                self.i_prot_mut().read_message_end().await?;
+                return Err(async_thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = SecondServiceSecondtestStringResult::read_from_in_protocol(self.i_prot_mut()).await?;
+            self.i_prot_mut().read_message_end().await?;
+            result.ok_or()
+        }
     }
-  }
 }
 
 //
@@ -7585,90 +7592,90 @@ impl <C: TThriftClient + TSecondServiceSyncClientMarker+ Send> TSecondServiceSyn
 
 #[async_trait]
 pub trait SecondServiceSyncHandler {
-  /// Prints 'testString("%s")' with thing as '%s'
+    /// Prints 'testString("%s")' with thing as '%s'
   /// @param string thing - the string to print
   /// @return string - returns the string 'thing'
-  async fn handle_secondtest_string(&self, thing: String) -> async_thrift::Result<String>;
+    async fn handle_secondtest_string(&self, thing: String) -> async_thrift::Result<String>;
 }
 
 pub struct SecondServiceSyncProcessor<H: SecondServiceSyncHandler> {
-  handler: H,
+    handler: H,
 }
 
-impl <H: SecondServiceSyncHandler> SecondServiceSyncProcessor<H> {
-  pub fn new(handler: H) -> SecondServiceSyncProcessor<H> {
-    SecondServiceSyncProcessor {
-      handler,
+impl<H: SecondServiceSyncHandler> SecondServiceSyncProcessor<H> {
+    pub fn new(handler: H) -> SecondServiceSyncProcessor<H> {
+        SecondServiceSyncProcessor {
+            handler,
+        }
     }
-  }
-  async fn process_secondtest_string(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    TSecondServiceProcessFunctions::process_secondtest_string(&self.handler, incoming_sequence_number, i_prot, o_prot).await
-  }
+    async fn process_secondtest_string(&self, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        TSecondServiceProcessFunctions::process_secondtest_string(&self.handler, incoming_sequence_number, i_prot, o_prot).await
+    }
 }
 
 pub struct TSecondServiceProcessFunctions;
 
 impl TSecondServiceProcessFunctions {
-  pub async fn process_secondtest_string<H: SecondServiceSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let args = SecondServiceSecondtestStringArgs::read_from_in_protocol(i_prot).await?;
-    match handler.handle_secondtest_string(args.thing).await {
-      Ok(handler_return) => {
-        let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident).await?;
-        let ret = SecondServiceSecondtestStringResult { result_value: Some(handler_return) };
-        ret.write_to_out_protocol(o_prot).await?;
-        o_prot.write_message_end().await?;
-        o_prot.flush().await
-      },
-      Err(e) => {
-        match e {
-          async_thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident).await?;
-            async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
-            o_prot.write_message_end().await?;
-            o_prot.flush().await
-          },
+    pub async fn process_secondtest_string<H: SecondServiceSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let args = SecondServiceSecondtestStringArgs::read_from_in_protocol(i_prot).await?;
+        match handler.handle_secondtest_string(args.thing).await {
+            Ok(handler_return) => {
+                let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident).await?;
+                let ret = SecondServiceSecondtestStringResult { result_value: Some(handler_return) };
+                ret.write_to_out_protocol(o_prot).await?;
+                o_prot.write_message_end().await?;
+                o_prot.flush().await
+            }
+            Err(e) => {
+                match e {
+                    async_thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                                ApplicationErrorKind::Unknown,
+                                e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("secondtestString", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident).await?;
+                        async_thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
+                        o_prot.write_message_end().await?;
+                        o_prot.flush().await
+                    }
+                }
+            }
         }
-      },
     }
-  }
 }
 
 #[async_trait]
-impl <H: SecondServiceSyncHandler + Send + Sync> TAsyncProcessor for SecondServiceSyncProcessor<H> {
-  async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let message_ident = i_prot.read_message_begin().await?;
-    let res = match &*message_ident.name {
-      "secondtestString" => {
-        self.process_secondtest_string(message_ident.sequence_number, i_prot, o_prot).await
-      },
-      method => {
-        Err(
-          async_thrift::Error::Application(
-            ApplicationError::new(
-              ApplicationErrorKind::UnknownMethod,
-              format!("unknown method {}", method)
-            )
-          )
-        )
-      },
-    };
-    async_thrift::server::handle_process_result(&message_ident, res, o_prot).await
-  }
+impl<H: SecondServiceSyncHandler + Send + Sync> TAsyncProcessor for SecondServiceSyncProcessor<H> {
+    async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let message_ident = i_prot.read_message_begin().await?;
+        let res = match &*message_ident.name {
+            "secondtestString" => {
+                self.process_secondtest_string(message_ident.sequence_number, i_prot, o_prot).await
+            }
+            method => {
+                Err(
+                    async_thrift::Error::Application(
+                        ApplicationError::new(
+                            ApplicationErrorKind::UnknownMethod,
+                            format!("unknown method {}", method),
+                        )
+                    )
+                )
+            }
+        };
+        async_thrift::server::handle_process_result(&message_ident, res, o_prot).await
+    }
 }
 
 //
@@ -7677,46 +7684,46 @@ impl <H: SecondServiceSyncHandler + Send + Sync> TAsyncProcessor for SecondServi
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct SecondServiceSecondtestStringArgs {
-  thing: String,
+    thing: String,
 }
 
 impl SecondServiceSecondtestStringArgs {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<SecondServiceSecondtestStringArgs> {
-    i_prot.read_struct_begin().await?;
-    let mut f_1: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        1 => {
-          let val = i_prot.read_string().await?;
-          f_1 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<SecondServiceSecondtestStringArgs> {
+        i_prot.read_struct_begin().await?;
+        let mut f_1: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                1 => {
+                    let val = i_prot.read_string().await?;
+                    f_1 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        verify_required_field_exists("SecondServiceSecondtestStringArgs.thing", &f_1)?;
+        let ret = SecondServiceSecondtestStringArgs {
+            thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    verify_required_field_exists("SecondServiceSecondtestStringArgs.thing", &f_1)?;
-    let ret = SecondServiceSecondtestStringArgs {
-      thing: f_1.expect("auto-generated code should have checked for presence of required fields"),
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("secondtestString_args");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::String, 1)).await?;
-    o_prot.write_string(&self.thing).await?;
-    o_prot.write_field_end().await?;
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("secondtestString_args");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        o_prot.write_field_begin(&TFieldIdentifier::new("thing", TType::String, 1)).await?;
+        o_prot.write_string(&self.thing).await?;
+        o_prot.write_field_end().await?;
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
+    }
 }
 
 //
@@ -7725,63 +7732,63 @@ impl SecondServiceSecondtestStringArgs {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct SecondServiceSecondtestStringResult {
-  result_value: Option<String>,
+    result_value: Option<String>,
 }
 
 impl SecondServiceSecondtestStringResult {
-  async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<SecondServiceSecondtestStringResult> {
-    i_prot.read_struct_begin().await?;
-    let mut f_0: Option<String> = None;
-    loop {
-      let field_ident = i_prot.read_field_begin().await?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        0 => {
-          let val = i_prot.read_string().await?;
-          f_0 = Some(val);
-        },
-        _ => {
-          i_prot.skip(field_ident.field_type).await?;
-        },
-      };
-      i_prot.read_field_end().await?;
+    async fn read_from_in_protocol(i_prot: &mut (dyn TAsyncInputProtocol + Send)) -> async_thrift::Result<SecondServiceSecondtestStringResult> {
+        i_prot.read_struct_begin().await?;
+        let mut f_0: Option<String> = None;
+        loop {
+            let field_ident = i_prot.read_field_begin().await?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                0 => {
+                    let val = i_prot.read_string().await?;
+                    f_0 = Some(val);
+                }
+                _ => {
+                    i_prot.skip(field_ident.field_type).await?;
+                }
+            };
+            i_prot.read_field_end().await?;
+        }
+        i_prot.read_struct_end().await?;
+        let ret = SecondServiceSecondtestStringResult {
+            result_value: f_0,
+        };
+        Ok(ret)
     }
-    i_prot.read_struct_end().await?;
-    let ret = SecondServiceSecondtestStringResult {
-      result_value: f_0,
-    };
-    Ok(ret)
-  }
-  async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("SecondServiceSecondtestStringResult");
-    o_prot.write_struct_begin(&struct_ident).await?;
-    if let Some(ref fld_var) = self.result_value {
-      o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::String, 0)).await?;
-      o_prot.write_string(fld_var).await?;
-      o_prot.write_field_end().await?;
-      ()
-    } else {
-      ()
+    async fn write_to_out_protocol(&self, o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("SecondServiceSecondtestStringResult");
+        o_prot.write_struct_begin(&struct_ident).await?;
+        if let Some(ref fld_var) = self.result_value {
+            o_prot.write_field_begin(&TFieldIdentifier::new("result_value", TType::String, 0)).await?;
+            o_prot.write_string(fld_var).await?;
+            o_prot.write_field_end().await?;
+            ()
+        } else {
+            ()
+        }
+        o_prot.write_field_stop().await?;
+        o_prot.write_struct_end().await
     }
-    o_prot.write_field_stop().await?;
-    o_prot.write_struct_end().await
-  }
-  fn ok_or(self) -> async_thrift::Result<String> {
-    if self.result_value.is_some() {
-      Ok(self.result_value.unwrap())
-    } else {
-      Err(
-        async_thrift::Error::Application(
-          ApplicationError::new(
-            ApplicationErrorKind::MissingResult,
-            "no result received for SecondServiceSecondtestString"
-          )
-        )
-      )
+    fn ok_or(self) -> async_thrift::Result<String> {
+        if self.result_value.is_some() {
+            Ok(self.result_value.unwrap())
+        } else {
+            Err(
+                async_thrift::Error::Application(
+                    ApplicationError::new(
+                        ApplicationErrorKind::MissingResult,
+                        "no result received for SecondServiceSecondtestString",
+                    )
+                )
+            )
+        }
     }
-  }
 }
 

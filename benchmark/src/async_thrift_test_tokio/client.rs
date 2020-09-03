@@ -1,26 +1,28 @@
 // only for test!!!
 //
 
+use std::io::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use futures::AsyncWriteExt;
+use time::Duration;
 use tokio::{
     net::{TcpStream, ToSocketAddrs},
     task,
 };
-use std::io::Error;
+
+use async_thrift_tokio::protocol::{TFieldIdentifier, TType};
+use async_thrift_tokio::protocol::{TAsyncInputProtocol, TAsyncOutputProtocol};
+use async_thrift_tokio::protocol::async_binary::{TAsyncBinaryInputProtocol, TAsyncBinaryOutputProtocol};
+use async_thrift_tokio::transport::{AsyncReadHalf, AsyncWrite, AsyncWriteHalf, TAsyncIoChannel};
+use async_thrift_tokio::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
+use async_thrift_tokio::transport::async_framed::{TAsyncFramedReadTransport, TAsyncFramedWriteTransport};
+use async_thrift_tokio::transport::async_socket::TAsyncTcpChannel;
+
+use crate::async_thrift_test_tokio::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-
-use async_thrift_tokio::transport::async_socket::TAsyncTcpChannel;
-use async_thrift_tokio::transport::async_framed::{TAsyncFramedWriteTransport, TAsyncFramedReadTransport};
-use async_thrift_tokio::transport::{AsyncWrite, TAsyncIoChannel, AsyncReadHalf, AsyncWriteHalf};
-use async_thrift_tokio::protocol::{TFieldIdentifier, TType};
-use async_thrift_tokio::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
-use async_thrift_tokio::protocol::{TAsyncOutputProtocol,TAsyncInputProtocol};
-use async_thrift_tokio::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
-use time::Duration;
-use futures::AsyncWriteExt;
-use crate::async_thrift_test_tokio::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 
 pub async fn run_client(addr: String, loop_num: i32) -> async_thrift_tokio::Result<(Box<Vec<i64>>)> {
     // time

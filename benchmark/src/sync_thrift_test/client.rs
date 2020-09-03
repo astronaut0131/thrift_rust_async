@@ -6,18 +6,20 @@ extern crate try_from;
 // generated Rust module
 
 
+use std::net::TcpStream;
+use std::thread;
+
 use thrift::protocol::{TCompactInputProtocol, TCompactOutputProtocol};
 use thrift::protocol::{TInputProtocol, TOutputProtocol};
 use thrift::transport::{TFramedReadTransport, TFramedWriteTransport};
 use thrift::transport::{TIoChannel, TTcpChannel};
 
-use std::thread;
-use std::net::TcpStream;
-use self::thrift::transport::{TBufferedReadTransportFactory, TBufferedReadTransport, TBufferedWriteTransport};
-use self::thrift::protocol::{TBinaryInputProtocol, TBinaryOutputProtocol};
 use crate::sync_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 
-pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)> {
+use self::thrift::protocol::{TBinaryInputProtocol, TBinaryOutputProtocol};
+use self::thrift::transport::{TBufferedReadTransport, TBufferedReadTransportFactory, TBufferedWriteTransport};
+
+pub fn run(stream: TcpStream, loop_num: i32) -> thrift::Result<(Box<Vec<i64>>)> {
     //
     // build client
     //
@@ -31,10 +33,10 @@ pub fn run(stream: TcpStream, loop_num : i32) -> thrift::Result<(Box<Vec<i64>>)>
     let (i_chan, o_chan) = channel.split()?;
 
     let i_prot = TBinaryInputProtocol::new(
-        TBufferedReadTransport::new(i_chan), true
+        TBufferedReadTransport::new(i_chan), true,
     );
     let o_prot = TBinaryOutputProtocol::new(
-        TBufferedWriteTransport::new(o_chan), true
+        TBufferedWriteTransport::new(o_chan), true,
     );
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);

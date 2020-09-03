@@ -3,7 +3,8 @@ use thrift::protocol::{
     TCompactOutputProtocolFactory, TInputProtocolFactory, TOutputProtocolFactory,
 };
 use thrift::server::TServer;
-use thrift::transport::{TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory, TWriteTransportFactory, TBufferedReadTransportFactory, TBufferedWriteTransportFactory};
+use thrift::transport::{TBufferedReadTransportFactory, TBufferedWriteTransportFactory, TFramedReadTransportFactory, TFramedWriteTransportFactory, TReadTransportFactory, TWriteTransportFactory};
+
 use crate::sync_thrift_test::tutorial::{CalculatorSyncHandler, CalculatorSyncProcessor};
 
 pub fn run(addr: &str) -> thrift::Result<()> {

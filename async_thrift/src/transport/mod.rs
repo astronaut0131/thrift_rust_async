@@ -1,6 +1,7 @@
 use std::io;
-use async_trait::async_trait;
 use std::ops::{Deref, DerefMut};
+
+use async_trait::async_trait;
 
 pub mod async_buffered;
 pub mod async_framed;

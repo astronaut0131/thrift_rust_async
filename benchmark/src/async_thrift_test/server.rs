@@ -1,14 +1,17 @@
-use async_thrift::server;
-use async_std::{
-    task,
-    net::ToSocketAddrs
-};
 use std::io::Error;
-use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
-use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
+
+use async_std::{
+    net::ToSocketAddrs,
+    task,
+};
 use async_trait::async_trait;
+
+use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocolFactory, TAsyncBinaryOutputProtocolFactory};
+use async_thrift::server;
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransportFactory, TAsyncBufferedWriteTransport, TAsyncBufferedWriteTransportFactory};
-use crate::async_thrift_test::tutorial::{CalculatorSyncProcessor, CalculatorSyncHandler};
+use async_thrift::transport::async_framed::{TAsyncFramedReadTransportFactory, TAsyncFramedWriteTransportFactory};
+
+use crate::async_thrift_test::tutorial::{CalculatorSyncHandler, CalculatorSyncProcessor};
 
 pub async fn run_server(addr: String) {
     let processor = CalculatorSyncProcessor::new(PartHandler {});
@@ -21,8 +24,7 @@ pub async fn run_server(addr: String) {
     s.listen(addr.as_str()).await;
 }
 
-struct PartHandler {
-}
+struct PartHandler {}
 
 #[async_trait]
 impl CalculatorSyncHandler for PartHandler {

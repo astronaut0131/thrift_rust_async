@@ -1,11 +1,12 @@
-pub mod async_binary;
-
 use async_trait::async_trait;
-use crate::transport::{TAsyncReadTransport, TAsyncWriteTransport};
-use crate::errors::{ProtocolError, ProtocolErrorKind};
 use std::convert::{From, TryFrom};
 use std::fmt;
 use std::fmt::{Display, Formatter};
+
+use crate::errors::{ProtocolError, ProtocolErrorKind};
+use crate::transport::{TAsyncReadTransport, TAsyncWriteTransport};
+
+pub mod async_binary;
 
 // Default maximum depth to which `TInputProtocol::skip` will skip a Thrift
 // field. A default is necessary because Thrift structs or collections may

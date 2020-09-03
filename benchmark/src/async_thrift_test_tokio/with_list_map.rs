@@ -17,14 +17,15 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
+use async_trait::async_trait;
+
 use async_thrift_tokio::{ApplicationError, ApplicationErrorKind, ProtocolError, ProtocolErrorKind, TThriftClient};
-use async_thrift_tokio::protocol::{TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TAsyncInputProtocol, TAsyncOutputProtocol, TSetIdentifier, TStructIdentifier, TType};
+use async_thrift_tokio::protocol::{TAsyncInputProtocol, TAsyncOutputProtocol, TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TSetIdentifier, TStructIdentifier, TType};
 use async_thrift_tokio::protocol::field_id;
 use async_thrift_tokio::protocol::verify_expected_message_type;
 use async_thrift_tokio::protocol::verify_expected_sequence_number;
 use async_thrift_tokio::protocol::verify_expected_service_call;
 use async_thrift_tokio::protocol::verify_required_field_exists;
-use async_trait::async_trait;
 use async_thrift_tokio::server::TAsyncProcessor;
 
 //
@@ -45,23 +46,26 @@ pub struct ListMapTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsy
     _sequence_number: i32,
 }
 
-impl <IP, OP> ListMapTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+impl<IP, OP> ListMapTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
     pub fn new(input_protocol: IP, output_protocol: OP) -> ListMapTestSyncClient<IP, OP> {
         ListMapTestSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
     }
 }
 
-impl <IP, OP> TThriftClient for ListMapTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
+impl<IP, OP> TThriftClient for ListMapTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {
     fn i_prot_mut(&mut self) -> &mut (dyn TAsyncInputProtocol + Send) { &mut self._i_prot }
     fn o_prot_mut(&mut self) -> &mut (dyn TAsyncOutputProtocol + Send) { &mut self._o_prot }
     fn sequence_number(&self) -> i32 { self._sequence_number }
-    fn increment_sequence_number(&mut self) -> i32 { self._sequence_number += 1; self._sequence_number }
+    fn increment_sequence_number(&mut self) -> i32 {
+        self._sequence_number += 1;
+        self._sequence_number
+    }
 }
 
-impl <IP, OP> TListMapTestSyncClientMarker for ListMapTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
+impl<IP, OP> TListMapTestSyncClientMarker for ListMapTestSyncClient<IP, OP> where IP: TAsyncInputProtocol, OP: TAsyncOutputProtocol {}
 
 #[async_trait]
-impl <C: TThriftClient + TListMapTestSyncClientMarker+ Send> TListMapTestSyncClient for C {
+impl<C: TThriftClient + TListMapTestSyncClientMarker + Send> TListMapTestSyncClient for C {
     async fn sum_up(&mut self, input: Vec<i32>) -> async_thrift_tokio::Result<i32> {
         (
             {
@@ -81,7 +85,7 @@ impl <C: TThriftClient + TListMapTestSyncClientMarker+ Send> TListMapTestSyncCli
             if message_ident.message_type == TMessageType::Exception {
                 let remote_error = async_thrift_tokio::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
                 self.i_prot_mut().read_message_end().await?;
-                return Err(async_thrift_tokio::Error::Application(remote_error))
+                return Err(async_thrift_tokio::Error::Application(remote_error));
             }
             verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
             let result = ListMapTestSumUpResult::read_from_in_protocol(self.i_prot_mut()).await?;
@@ -108,7 +112,7 @@ impl <C: TThriftClient + TListMapTestSyncClientMarker+ Send> TListMapTestSyncCli
             if message_ident.message_type == TMessageType::Exception {
                 let remote_error = async_thrift_tokio::Error::read_application_error_from_in_protocol(self.i_prot_mut()).await?;
                 self.i_prot_mut().read_message_end().await?;
-                return Err(async_thrift_tokio::Error::Application(remote_error))
+                return Err(async_thrift_tokio::Error::Application(remote_error));
             }
             verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
             let result = ListMapTestFindValueResult::read_from_in_protocol(self.i_prot_mut()).await?;
@@ -132,7 +136,7 @@ pub struct ListMapTestSyncProcessor<H: ListMapTestSyncHandler> {
     handler: H,
 }
 
-impl <H: ListMapTestSyncHandler> ListMapTestSyncProcessor<H> {
+impl<H: ListMapTestSyncHandler> ListMapTestSyncProcessor<H> {
     pub fn new(handler: H) -> ListMapTestSyncProcessor<H> {
         ListMapTestSyncProcessor {
             handler,
@@ -159,7 +163,7 @@ impl TListMapTestProcessFunctions {
                 ret.write_to_out_protocol(o_prot).await?;
                 o_prot.write_message_end().await?;
                 o_prot.flush().await
-            },
+            }
             Err(e) => {
                 match e {
                     async_thrift_tokio::Error::Application(app_err) => {
@@ -168,12 +172,12 @@ impl TListMapTestProcessFunctions {
                         async_thrift_tokio::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
                         o_prot.write_message_end().await?;
                         o_prot.flush().await
-                    },
+                    }
                     _ => {
                         let ret_err = {
                             ApplicationError::new(
                                 ApplicationErrorKind::Unknown,
-                                e.description()
+                                e.description(),
                             )
                         };
                         let message_ident = TMessageIdentifier::new("sum_up", TMessageType::Exception, incoming_sequence_number);
@@ -181,9 +185,9 @@ impl TListMapTestProcessFunctions {
                         async_thrift_tokio::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
                         o_prot.write_message_end().await?;
                         o_prot.flush().await
-                    },
+                    }
                 }
-            },
+            }
         }
     }
     pub async fn process_find_value<H: ListMapTestSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift_tokio::Result<()> {
@@ -196,7 +200,7 @@ impl TListMapTestProcessFunctions {
                 ret.write_to_out_protocol(o_prot).await?;
                 o_prot.write_message_end().await?;
                 o_prot.flush().await
-            },
+            }
             Err(e) => {
                 match e {
                     async_thrift_tokio::Error::Application(app_err) => {
@@ -205,12 +209,12 @@ impl TListMapTestProcessFunctions {
                         async_thrift_tokio::Error::write_application_error_to_out_protocol(&app_err, o_prot).await?;
                         o_prot.write_message_end().await?;
                         o_prot.flush().await
-                    },
+                    }
                     _ => {
                         let ret_err = {
                             ApplicationError::new(
                                 ApplicationErrorKind::Unknown,
-                                e.description()
+                                e.description(),
                             )
                         };
                         let message_ident = TMessageIdentifier::new("find_value", TMessageType::Exception, incoming_sequence_number);
@@ -218,34 +222,34 @@ impl TListMapTestProcessFunctions {
                         async_thrift_tokio::Error::write_application_error_to_out_protocol(&ret_err, o_prot).await?;
                         o_prot.write_message_end().await?;
                         o_prot.flush().await
-                    },
+                    }
                 }
-            },
+            }
         }
     }
 }
 
 #[async_trait]
-impl <H: ListMapTestSyncHandler + Send + Sync> TAsyncProcessor for ListMapTestSyncProcessor<H> {
+impl<H: ListMapTestSyncHandler + Send + Sync> TAsyncProcessor for ListMapTestSyncProcessor<H> {
     async fn process(&self, i_prot: &mut (dyn TAsyncInputProtocol + Send), o_prot: &mut (dyn TAsyncOutputProtocol + Send)) -> async_thrift_tokio::Result<()> {
         let message_ident = i_prot.read_message_begin().await?;
         let res = match &*message_ident.name {
             "sum_up" => {
                 self.process_sum_up(message_ident.sequence_number, i_prot, o_prot).await
-            },
+            }
             "find_value" => {
                 self.process_find_value(message_ident.sequence_number, i_prot, o_prot).await
-            },
+            }
             method => {
                 Err(
                     async_thrift_tokio::Error::Application(
                         ApplicationError::new(
                             ApplicationErrorKind::UnknownMethod,
-                            format!("unknown method {}", method)
+                            format!("unknown method {}", method),
                         )
                     )
                 )
-            },
+            }
         };
         async_thrift_tokio::server::handle_process_result(&message_ident, res, o_prot).await
     }
@@ -280,10 +284,10 @@ impl ListMapTestSumUpArgs {
                     }
                     i_prot.read_list_end().await?;
                     f_1 = Some(val);
-                },
+                }
                 _ => {
                     i_prot.skip(field_ident.field_type).await?;
-                },
+                }
             };
             i_prot.read_field_end().await?;
         }
@@ -332,10 +336,10 @@ impl ListMapTestSumUpResult {
                 0 => {
                     let val = i_prot.read_i32().await?;
                     f_0 = Some(val);
-                },
+                }
                 _ => {
                     i_prot.skip(field_ident.field_type).await?;
-                },
+                }
             };
             i_prot.read_field_end().await?;
         }
@@ -367,7 +371,7 @@ impl ListMapTestSumUpResult {
                 async_thrift_tokio::Error::Application(
                     ApplicationError::new(
                         ApplicationErrorKind::MissingResult,
-                        "no result received for ListMapTestSumUp"
+                        "no result received for ListMapTestSumUp",
                     )
                 )
             )
@@ -405,10 +409,10 @@ impl ListMapTestFindValueArgs {
                     }
                     i_prot.read_map_end().await?;
                     f_1 = Some(val);
-                },
+                }
                 _ => {
                     i_prot.skip(field_ident.field_type).await?;
-                },
+                }
             };
             i_prot.read_field_end().await?;
         }
@@ -458,10 +462,10 @@ impl ListMapTestFindValueResult {
                 0 => {
                     let val = i_prot.read_i32().await?;
                     f_0 = Some(val);
-                },
+                }
                 _ => {
                     i_prot.skip(field_ident.field_type).await?;
-                },
+                }
             };
             i_prot.read_field_end().await?;
         }
@@ -493,7 +497,7 @@ impl ListMapTestFindValueResult {
                 async_thrift_tokio::Error::Application(
                     ApplicationError::new(
                         ApplicationErrorKind::MissingResult,
-                        "no result received for ListMapTestFindValue"
+                        "no result received for ListMapTestFindValue",
                     )
                 )
             )

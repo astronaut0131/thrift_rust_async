@@ -1,28 +1,31 @@
 // only for test!!!
 //
 
+use std::io::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
+
 use async_std::{
     net::{TcpListener, TcpStream, ToSocketAddrs},
     task,
 };
-use std::io::Error;
+use async_std::sync::Receiver;
+use futures::AsyncWriteExt;
+use thrift::transport::TTcpChannel;
+use time::Duration;
+
+use async_thrift::protocol::{TFieldIdentifier, TType};
+use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocol, TAsyncBinaryOutputProtocol};
+use async_thrift::protocol::TAsyncOutputProtocol;
+use async_thrift::transport::{AsyncReadHalf, AsyncWrite, AsyncWriteHalf, TAsyncIoChannel};
+use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
+use async_thrift::transport::async_framed::{TAsyncFramedReadTransport, TAsyncFramedWriteTransport};
+use async_thrift::transport::async_socket::TAsyncTcpChannel;
+
+use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 
-use async_thrift::transport::async_socket::TAsyncTcpChannel;
-use async_thrift::transport::async_framed::{TAsyncFramedWriteTransport, TAsyncFramedReadTransport};
-use async_thrift::transport::{AsyncWrite, TAsyncIoChannel, AsyncReadHalf, AsyncWriteHalf};
-use async_thrift::protocol::{TFieldIdentifier, TType};
-use async_thrift::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
-use async_thrift::protocol::TAsyncOutputProtocol;
-use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
-use time::Duration;
-use futures::AsyncWriteExt;
-use thrift::transport::TTcpChannel;
-use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
-use async_std::sync::Receiver;
 pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
@@ -51,8 +54,7 @@ pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) ->
             client.ping().await?;
             let end = time::Instant::now();
             time_array.push((end - before).num_nanoseconds().unwrap());
-        }
-        else {
+        } else {
             break;
         }
     }

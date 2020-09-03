@@ -50,15 +50,20 @@
 #![deny(bare_trait_objects)]
 
 extern crate byteorder;
-extern crate ordered_float;
 extern crate integer_encoding;
-extern crate threadpool;
-
 #[macro_use]
 extern crate log;
+extern crate ordered_float;
+extern crate threadpool;
 
 // NOTE: this macro has to be defined before any modules. See:
 // https://danielkeep.github.io/quick-intro-to-macros.html#some-more-gotchas
+
+// Re-export ordered-float, since it is used by the generator
+pub use ordered_float::OrderedFloat as OrderedFloat;
+
+pub use crate::autogen::*;
+pub use crate::errors::*;
 
 /// Assert that an expression returning a `Result` is a success. If it is,
 /// return the value contained in the result, i.e. `expr.unwrap()`.
@@ -77,11 +82,7 @@ pub mod transport;
 
 mod errors;
 
-pub use crate::errors::*;
-
 mod autogen;
-
-pub use crate::autogen::*;
 
 /// Result type returned by all runtime library functions.
 ///
@@ -89,5 +90,3 @@ pub use crate::autogen::*;
 /// with `E` defined as the `thrift::Error` type.
 pub type Result<T> = std::result::Result<T, self::Error>;
 
-// Re-export ordered-float, since it is used by the generator
-pub use ordered_float::OrderedFloat as OrderedFloat;

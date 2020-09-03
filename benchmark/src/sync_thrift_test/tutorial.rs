@@ -8,7 +8,6 @@
 
 extern crate thrift;
 
-use thrift::OrderedFloat;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::{From, TryFrom};
@@ -19,7 +18,8 @@ use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 use thrift::{ApplicationError, ApplicationErrorKind, ProtocolError, ProtocolErrorKind, TThriftClient};
-use thrift::protocol::{TFieldIdentifier, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TInputProtocol, TOutputProtocol, TSetIdentifier, TStructIdentifier, TType};
+use thrift::OrderedFloat;
+use thrift::protocol::{TFieldIdentifier, TInputProtocol, TListIdentifier, TMapIdentifier, TMessageIdentifier, TMessageType, TOutputProtocol, TSetIdentifier, TStructIdentifier, TType};
 use thrift::protocol::field_id;
 use thrift::protocol::verify_expected_message_type;
 use thrift::protocol::verify_expected_sequence_number;
@@ -32,60 +32,63 @@ use thrift::server::TProcessor;
 //
 
 pub trait TCalculatorSyncClient {
-  fn ping(&mut self) -> thrift::Result<()>;
+    fn ping(&mut self) -> thrift::Result<()>;
 }
 
 pub trait TCalculatorSyncClientMarker {}
 
 pub struct CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {
-  _i_prot: IP,
-  _o_prot: OP,
-  _sequence_number: i32,
+    _i_prot: IP,
+    _o_prot: OP,
+    _sequence_number: i32,
 }
 
-impl <IP, OP> CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {
-  pub fn new(input_protocol: IP, output_protocol: OP) -> CalculatorSyncClient<IP, OP> {
-    CalculatorSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
-  }
-}
-
-impl <IP, OP> TThriftClient for CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {
-  fn i_prot_mut(&mut self) -> &mut dyn TInputProtocol { &mut self._i_prot }
-  fn o_prot_mut(&mut self) -> &mut dyn TOutputProtocol { &mut self._o_prot }
-  fn sequence_number(&self) -> i32 { self._sequence_number }
-  fn increment_sequence_number(&mut self) -> i32 { self._sequence_number += 1; self._sequence_number }
-}
-
-impl <IP, OP> TCalculatorSyncClientMarker for CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {}
-
-impl <C: TThriftClient + TCalculatorSyncClientMarker> TCalculatorSyncClient for C {
-  fn ping(&mut self) -> thrift::Result<()> {
-    (
-      {
-        self.increment_sequence_number();
-        let message_ident = TMessageIdentifier::new("ping", TMessageType::Call, self.sequence_number());
-        let call_args = CalculatorPingArgs {  };
-        self.o_prot_mut().write_message_begin(&message_ident)?;
-        call_args.write_to_out_protocol(self.o_prot_mut())?;
-        self.o_prot_mut().write_message_end()?;
-        self.o_prot_mut().flush()
-      }
-    )?;
-    {
-      let message_ident = self.i_prot_mut().read_message_begin()?;
-      verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
-      verify_expected_service_call("ping", &message_ident.name)?;
-      if message_ident.message_type == TMessageType::Exception {
-        let remote_error = thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut())?;
-        self.i_prot_mut().read_message_end()?;
-        return Err(thrift::Error::Application(remote_error))
-      }
-      verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
-      let result = CalculatorPingResult::read_from_in_protocol(self.i_prot_mut())?;
-      self.i_prot_mut().read_message_end()?;
-      result.ok_or()
+impl<IP, OP> CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {
+    pub fn new(input_protocol: IP, output_protocol: OP) -> CalculatorSyncClient<IP, OP> {
+        CalculatorSyncClient { _i_prot: input_protocol, _o_prot: output_protocol, _sequence_number: 0 }
     }
-  }
+}
+
+impl<IP, OP> TThriftClient for CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {
+    fn i_prot_mut(&mut self) -> &mut dyn TInputProtocol { &mut self._i_prot }
+    fn o_prot_mut(&mut self) -> &mut dyn TOutputProtocol { &mut self._o_prot }
+    fn sequence_number(&self) -> i32 { self._sequence_number }
+    fn increment_sequence_number(&mut self) -> i32 {
+        self._sequence_number += 1;
+        self._sequence_number
+    }
+}
+
+impl<IP, OP> TCalculatorSyncClientMarker for CalculatorSyncClient<IP, OP> where IP: TInputProtocol, OP: TOutputProtocol {}
+
+impl<C: TThriftClient + TCalculatorSyncClientMarker> TCalculatorSyncClient for C {
+    fn ping(&mut self) -> thrift::Result<()> {
+        (
+            {
+                self.increment_sequence_number();
+                let message_ident = TMessageIdentifier::new("ping", TMessageType::Call, self.sequence_number());
+                let call_args = CalculatorPingArgs {};
+                self.o_prot_mut().write_message_begin(&message_ident)?;
+                call_args.write_to_out_protocol(self.o_prot_mut())?;
+                self.o_prot_mut().write_message_end()?;
+                self.o_prot_mut().flush()
+            }
+        )?;
+        {
+            let message_ident = self.i_prot_mut().read_message_begin()?;
+            verify_expected_sequence_number(self.sequence_number(), message_ident.sequence_number)?;
+            verify_expected_service_call("ping", &message_ident.name)?;
+            if message_ident.message_type == TMessageType::Exception {
+                let remote_error = thrift::Error::read_application_error_from_in_protocol(self.i_prot_mut())?;
+                self.i_prot_mut().read_message_end()?;
+                return Err(thrift::Error::Application(remote_error));
+            }
+            verify_expected_message_type(TMessageType::Reply, message_ident.message_type)?;
+            let result = CalculatorPingResult::read_from_in_protocol(self.i_prot_mut())?;
+            self.i_prot_mut().read_message_end()?;
+            result.ok_or()
+        }
+    }
 }
 
 //
@@ -93,86 +96,86 @@ impl <C: TThriftClient + TCalculatorSyncClientMarker> TCalculatorSyncClient for 
 //
 
 pub trait CalculatorSyncHandler {
-  fn handle_ping(&self) -> thrift::Result<()>;
+    fn handle_ping(&self) -> thrift::Result<()>;
 }
 
 pub struct CalculatorSyncProcessor<H: CalculatorSyncHandler> {
-  handler: H,
+    handler: H,
 }
 
-impl <H: CalculatorSyncHandler> CalculatorSyncProcessor<H> {
-  pub fn new(handler: H) -> CalculatorSyncProcessor<H> {
-    CalculatorSyncProcessor {
-      handler,
+impl<H: CalculatorSyncHandler> CalculatorSyncProcessor<H> {
+    pub fn new(handler: H) -> CalculatorSyncProcessor<H> {
+        CalculatorSyncProcessor {
+            handler,
+        }
     }
-  }
-  fn process_ping(&self, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    TCalculatorProcessFunctions::process_ping(&self.handler, incoming_sequence_number, i_prot, o_prot)
-  }
+    fn process_ping(&self, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
+        TCalculatorProcessFunctions::process_ping(&self.handler, incoming_sequence_number, i_prot, o_prot)
+    }
 }
 
 pub struct TCalculatorProcessFunctions;
 
 impl TCalculatorProcessFunctions {
-  pub fn process_ping<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    let _ = CalculatorPingArgs::read_from_in_protocol(i_prot)?;
-    match handler.handle_ping() {
-      Ok(_) => {
-        let message_ident = TMessageIdentifier::new("ping", TMessageType::Reply, incoming_sequence_number);
-        o_prot.write_message_begin(&message_ident)?;
-        let ret = CalculatorPingResult {  };
-        ret.write_to_out_protocol(o_prot)?;
-        o_prot.write_message_end()?;
-        o_prot.flush()
-      },
-      Err(e) => {
-        match e {
-          thrift::Error::Application(app_err) => {
-            let message_ident = TMessageIdentifier::new("ping", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident)?;
-            thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot)?;
-            o_prot.write_message_end()?;
-            o_prot.flush()
-          },
-          _ => {
-            let ret_err = {
-              ApplicationError::new(
-                ApplicationErrorKind::Unknown,
-                e.description()
-              )
-            };
-            let message_ident = TMessageIdentifier::new("ping", TMessageType::Exception, incoming_sequence_number);
-            o_prot.write_message_begin(&message_ident)?;
-            thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot)?;
-            o_prot.write_message_end()?;
-            o_prot.flush()
-          },
+    pub fn process_ping<H: CalculatorSyncHandler>(handler: &H, incoming_sequence_number: i32, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
+        let _ = CalculatorPingArgs::read_from_in_protocol(i_prot)?;
+        match handler.handle_ping() {
+            Ok(_) => {
+                let message_ident = TMessageIdentifier::new("ping", TMessageType::Reply, incoming_sequence_number);
+                o_prot.write_message_begin(&message_ident)?;
+                let ret = CalculatorPingResult {};
+                ret.write_to_out_protocol(o_prot)?;
+                o_prot.write_message_end()?;
+                o_prot.flush()
+            }
+            Err(e) => {
+                match e {
+                    thrift::Error::Application(app_err) => {
+                        let message_ident = TMessageIdentifier::new("ping", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident)?;
+                        thrift::Error::write_application_error_to_out_protocol(&app_err, o_prot)?;
+                        o_prot.write_message_end()?;
+                        o_prot.flush()
+                    }
+                    _ => {
+                        let ret_err = {
+                            ApplicationError::new(
+                              ApplicationErrorKind::Unknown,
+                              e.description(),
+                            )
+                        };
+                        let message_ident = TMessageIdentifier::new("ping", TMessageType::Exception, incoming_sequence_number);
+                        o_prot.write_message_begin(&message_ident)?;
+                        thrift::Error::write_application_error_to_out_protocol(&ret_err, o_prot)?;
+                        o_prot.write_message_end()?;
+                        o_prot.flush()
+                    }
+                }
+            }
         }
-      },
     }
-  }
 }
 
-impl <H: CalculatorSyncHandler> TProcessor for CalculatorSyncProcessor<H> {
-  fn process(&self, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    let message_ident = i_prot.read_message_begin()?;
-    let res = match &*message_ident.name {
-      "ping" => {
-        self.process_ping(message_ident.sequence_number, i_prot, o_prot)
-      },
-      method => {
-        Err(
-          thrift::Error::Application(
-            ApplicationError::new(
-              ApplicationErrorKind::UnknownMethod,
-              format!("unknown method {}", method)
-            )
-          )
-        )
-      },
-    };
-    thrift::server::handle_process_result(&message_ident, res, o_prot)
-  }
+impl<H: CalculatorSyncHandler> TProcessor for CalculatorSyncProcessor<H> {
+    fn process(&self, i_prot: &mut dyn TInputProtocol, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
+        let message_ident = i_prot.read_message_begin()?;
+        let res = match &*message_ident.name {
+            "ping" => {
+                self.process_ping(message_ident.sequence_number, i_prot, o_prot)
+            }
+            method => {
+                Err(
+                    thrift::Error::Application(
+                        ApplicationError::new(
+                          ApplicationErrorKind::UnknownMethod,
+                          format!("unknown method {}", method),
+                        )
+                    )
+                )
+            }
+        };
+        thrift::server::handle_process_result(&message_ident, res, o_prot)
+    }
 }
 
 //
@@ -180,35 +183,34 @@ impl <H: CalculatorSyncHandler> TProcessor for CalculatorSyncProcessor<H> {
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct CalculatorPingArgs {
-}
+struct CalculatorPingArgs {}
 
 impl CalculatorPingArgs {
-  fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorPingArgs> {
-    i_prot.read_struct_begin()?;
-    loop {
-      let field_ident = i_prot.read_field_begin()?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        _ => {
-          i_prot.skip(field_ident.field_type)?;
-        },
-      };
-      i_prot.read_field_end()?;
+    fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorPingArgs> {
+        i_prot.read_struct_begin()?;
+        loop {
+            let field_ident = i_prot.read_field_begin()?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                _ => {
+                    i_prot.skip(field_ident.field_type)?;
+                }
+            };
+            i_prot.read_field_end()?;
+        }
+        i_prot.read_struct_end()?;
+        let ret = CalculatorPingArgs {};
+        Ok(ret)
     }
-    i_prot.read_struct_end()?;
-    let ret = CalculatorPingArgs {};
-    Ok(ret)
-  }
-  fn write_to_out_protocol(&self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("ping_args");
-    o_prot.write_struct_begin(&struct_ident)?;
-    o_prot.write_field_stop()?;
-    o_prot.write_struct_end()
-  }
+    fn write_to_out_protocol(&self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("ping_args");
+        o_prot.write_struct_begin(&struct_ident)?;
+        o_prot.write_field_stop()?;
+        o_prot.write_struct_end()
+    }
 }
 
 //
@@ -216,37 +218,36 @@ impl CalculatorPingArgs {
 //
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct CalculatorPingResult {
-}
+struct CalculatorPingResult {}
 
 impl CalculatorPingResult {
-  fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorPingResult> {
-    i_prot.read_struct_begin()?;
-    loop {
-      let field_ident = i_prot.read_field_begin()?;
-      if field_ident.field_type == TType::Stop {
-        break;
-      }
-      let field_id = field_id(&field_ident)?;
-      match field_id {
-        _ => {
-          i_prot.skip(field_ident.field_type)?;
-        },
-      };
-      i_prot.read_field_end()?;
+    fn read_from_in_protocol(i_prot: &mut dyn TInputProtocol) -> thrift::Result<CalculatorPingResult> {
+        i_prot.read_struct_begin()?;
+        loop {
+            let field_ident = i_prot.read_field_begin()?;
+            if field_ident.field_type == TType::Stop {
+                break;
+            }
+            let field_id = field_id(&field_ident)?;
+            match field_id {
+                _ => {
+                    i_prot.skip(field_ident.field_type)?;
+                }
+            };
+            i_prot.read_field_end()?;
+        }
+        i_prot.read_struct_end()?;
+        let ret = CalculatorPingResult {};
+        Ok(ret)
     }
-    i_prot.read_struct_end()?;
-    let ret = CalculatorPingResult {};
-    Ok(ret)
-  }
-  fn write_to_out_protocol(&self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
-    let struct_ident = TStructIdentifier::new("CalculatorPingResult");
-    o_prot.write_struct_begin(&struct_ident)?;
-    o_prot.write_field_stop()?;
-    o_prot.write_struct_end()
-  }
-  fn ok_or(self) -> thrift::Result<()> {
-    Ok(())
-  }
+    fn write_to_out_protocol(&self, o_prot: &mut dyn TOutputProtocol) -> thrift::Result<()> {
+        let struct_ident = TStructIdentifier::new("CalculatorPingResult");
+        o_prot.write_struct_begin(&struct_ident)?;
+        o_prot.write_field_stop()?;
+        o_prot.write_struct_end()
+    }
+    fn ok_or(self) -> thrift::Result<()> {
+        Ok(())
+    }
 }
 

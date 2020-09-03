@@ -15,13 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use std::{error, fmt, io, string};
 use std::convert::{From, Into};
+use std::convert::TryFrom;
 use std::error::Error as StdError;
 use std::fmt::{Debug, Display, Formatter};
-use std::{error, fmt, io, string};
-use std::convert::TryFrom;
 
-use crate::protocol::{TFieldIdentifier, TAsyncInputProtocol, TAsyncOutputProtocol, TStructIdentifier, TType};
+use crate::protocol::{TAsyncInputProtocol, TAsyncOutputProtocol, TFieldIdentifier, TStructIdentifier, TType};
 
 // FIXME: should all my error structs impl error::Error as well?
 // FIXME: should all fields in TransportError, ProtocolError and ApplicationError be optional?

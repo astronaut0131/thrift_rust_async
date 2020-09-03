@@ -1,27 +1,25 @@
-// async use
-use async_thrift::server;
-use async_std::task;
+use std::cell::RefCell;
+use std::fs::File;
+use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
+
 use async_std::io::Error;
 use async_std::sync::channel;
+use async_std::task;
+use futures::future::*;
+use thrift::transport::TTcpChannel;
+
+// async use
+use async_thrift::server;
+
+use crate::util::{handle_time, parse_args};
 
 mod async_thrift_test;
-
-use futures::future::*;
 
 // sync use
 mod sync_thrift_test;
 mod async_thrift_test_tokio;
-
-
-use std::thread;
-use std::time::Duration;
-use std::cell::RefCell;
-use crate::util::{handle_time, parse_args};
-
-
-use thrift::transport::TTcpChannel;
-use std::fs::File;
-use std::sync::Arc;
 
 
 // util
