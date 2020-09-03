@@ -187,7 +187,7 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
                                                          time_statistic[6]);
         } else {
             output[ASYNC_LOCATION] = util::format_result_csv(String::from("async"), args[THREAD_NUM].parse::<i64>().unwrap(),
-                                                             args[THREAD_NUM].parse::<i64>().unwrap() * args[LOOP_NUM].parse::<i64>().unwrap(),
+                                                             args[LOOP_NUM].parse::<i64>().unwrap(),
                                                              (end - start).whole_milliseconds() as i64,
                                                              time_statistic[0], time_statistic[1],
                                                              time_statistic[2], time_statistic[3],

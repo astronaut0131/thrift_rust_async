@@ -20,8 +20,7 @@ use async_thrift::transport::{AsyncReadHalf, AsyncWrite, AsyncWriteHalf, TAsyncI
 use async_thrift::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransport, TAsyncFramedWriteTransport};
 use async_thrift::transport::async_socket::TAsyncTcpChannel;
-
-use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
+use crate::async_thrift_test::echo::{LongMessageTestSyncClient,TLongMessageTestSyncClient};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -43,7 +42,7 @@ pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) ->
         TAsyncBufferedWriteTransport::new(o_chan), true,
     );
 
-    let mut client = CalculatorSyncClient::new(i_prot, o_prot);
+    let mut client = LongMessageTestSyncClient::new(i_prot, o_prot);
 
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
@@ -51,7 +50,7 @@ pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) ->
         let x = receiver.recv().await.unwrap();
         if x == 1 {
             let before = time::Instant::now();
-            client.ping().await?;
+            let s = client.echo(vec![0;996]).await?;
             let end = time::Instant::now();
             time_array.push((end - before).num_nanoseconds().unwrap());
         } else {
