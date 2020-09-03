@@ -50,8 +50,8 @@ const PRINT_CSV: bool = false;
 const DEFAULT_RUN_CLIENT: &str = "true";
 const DEFAULT_RUN_SERVER: &str = "true";
 const DEFAULT_RUN_SYNC: &str = "false";
-const DEFAULT_RUN_ASYNC: &str = "true";
-const DEFAULT_RUN_ASYNC_TOKIO: &str = "false";
+const DEFAULT_RUN_ASYNC: &str = "false";
+const DEFAULT_RUN_ASYNC_TOKIO: &str = "true";
 const DEFAULT_THREAD_NUM: &str = "300";
 const DEFAULT_LOOP_NUM: &str = "5000";
 const DEFAULT_ADDR: &str = "127.0.0.1:9090";
@@ -117,7 +117,7 @@ fn run_sync_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
                                                     time_statistic[4], time_statistic[5],
                                                     time_statistic[6]);
     }
-    
+
     println!("sync finished!");
 }
 
@@ -257,9 +257,10 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
         }
     }
 
-    // if args[RUN_SERVER] == String::from("true") {
-    //     server.unwrap().cancel().await;
-    // }
+    if args[RUN_SERVER] == String::from("true") {
+        server.unwrap().remote_handle();
+    }
+
 
     println!("async tokio finished!");
 }
