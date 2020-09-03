@@ -7,21 +7,21 @@ use tokio::{
     task,
 };
 use std::io::Error;
-
 pub type Result<T> = std::result::Result<T, Error>;
-
-
 use async_thrift_tokio::transport::async_socket::TAsyncTcpChannel;
 use async_thrift_tokio::transport::async_framed::{TAsyncFramedWriteTransport, TAsyncFramedReadTransport};
-use async_thrift_tokio::transport::{AsyncWrite, TAsyncIoChannel, AsyncReadHalf, AsyncWriteHalf};
+use async_thrift_tokio::transport::{AsyncWrite, TAsyncIoChannel};
 use async_thrift_tokio::protocol::{TFieldIdentifier, TType};
 use async_thrift_tokio::protocol::async_binary::{TAsyncBinaryOutputProtocol, TAsyncBinaryInputProtocol};
-use async_thrift_tokio::protocol::{TAsyncOutputProtocol,TAsyncInputProtocol};
+use async_thrift_tokio::protocol::TAsyncOutputProtocol;
 use async_thrift_tokio::transport::async_buffered::{TAsyncBufferedReadTransport, TAsyncBufferedWriteTransport};
 use time::Duration;
 use futures::AsyncWriteExt;
-use crate::async_thrift_test_tokio::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
+use crate::async_thrift_test_tokio::with_list_map::{ListMapTestSyncClient,TListMapTestSyncClient};
+use std::collections::BTreeMap;
+use crate::THREAD_NUM;
 
+// test client
 pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift_tokio::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
@@ -44,7 +44,8 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
 
     for _ in 0..loop_num {
         let before = time::now();
-        client.ping().await?;
+        let vec = vec![1;256];
+        client.sum_up(vec);
         let end = time::now();
 
         time_array.push((end - before).num_nanoseconds().unwrap());
@@ -53,32 +54,4 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
     c.close();
 
     Ok((Box::new(time_array)))
-}
-
-
-// test transport
-pub async fn try_run(addr: impl ToSocketAddrs) -> Result<()> {
-    let stream = TcpStream::connect(addr).await?;
-    let c = TAsyncTcpChannel::with_stream(stream);
-    let mut t = TAsyncFramedWriteTransport::new(c);
-
-    t.write(&[0x00, 0x00, 0x00, 0x02, 0x02, 0x01]).await?;
-    t.flush().await?;
-    Ok(())
-}
-
-// test protocol
-pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
-    let stream = TcpStream::connect(addr).await?;
-    let mut channel = TAsyncTcpChannel::with_stream(stream);
-
-    let t = TAsyncFramedWriteTransport::new(channel);
-    let mut protocol = TAsyncBinaryOutputProtocol::new(t, true);
-
-    protocol.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await.unwrap();
-    protocol.write_string("foo").await.unwrap();
-    protocol.write_field_end().await.unwrap();
-    protocol.flush().await;
-
-    Ok(())
 }
