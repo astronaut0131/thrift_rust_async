@@ -45,9 +45,9 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
     for _ in 0..loop_num {
-        let before = time::now();
+        let before = time::Instant::now();
         client.ping().await?;
-        let end = time::now();
+        let end = time::Instant::now();
 
         time_array.push((end - before).num_nanoseconds().unwrap());
     }

@@ -33,13 +33,13 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 100;
+const THREAD_NUM: i32 = 200;
 // number of calls for each client
-const LOOP_NUM: i32 = 10000;
+const LOOP_NUM: i32 = 5000;
 
 // whether to run component
 const RUN_CLIENT: bool = true;
-const RUN_SERVER: bool = false;
+const RUN_SERVER: bool = true;
 const RUN_SYNC: bool = false;
 const RUN_ASYNC: bool = true;
 
@@ -69,7 +69,7 @@ fn run_sync_both(output: &mut Vec<String>) {
 
     if RUN_CLIENT {
         // time clock start here
-        let start = time::now();
+        let start = time::Instant::now();
 
         // build client thread
         let mut list = Vec::new();
@@ -87,7 +87,7 @@ fn run_sync_both(output: &mut Vec<String>) {
         }
 
         // time clock end here;
-        let end = time::now();
+        let end = time::Instant::now();
 
         // handle raw time result to statistic
         let time_statistic = handle_time(res);
@@ -123,7 +123,7 @@ async fn run_async_both(output: &mut Vec<String>) {
     if RUN_CLIENT {
         // time
         let mut list = Vec::new();
-        let start = time::now();
+        let start = time::Instant::now();
 
         for _ in 0..THREAD_NUM {
             // build client
@@ -134,7 +134,7 @@ async fn run_async_both(output: &mut Vec<String>) {
         let raw_time_result = join_all(list).await;
 
         // time clock end here;
-        let end = time::now();
+        let end = time::Instant::now();
 
         // to collect time result from client
         let mut res = Vec::new();
@@ -160,7 +160,7 @@ async fn run_async_both(output: &mut Vec<String>) {
 }
 
 fn main() {
-    let guard = pprof::ProfilerGuard::new(100).unwrap();
+//    let guard = pprof::ProfilerGuard::new(100).unwrap();
 
 
     let mut output = vec![String::new(), String::new(), String::new()];
@@ -176,10 +176,10 @@ fn main() {
     //     run_sync_both(&mut output);
     // }
 
-    if let Ok(report) = guard.report().build() {
-        let file = File::create("flamegraph.svg").unwrap();
-        report.flamegraph(file).unwrap();
-    };
+ //   if let Ok(report) = guard.report().build() {
+   //     let file = File::create("flamegraph.svg").unwrap();
+     //   report.flamegraph(file).unwrap();
+  //  };
 
     util::print_result(&output);
 }
