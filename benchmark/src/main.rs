@@ -142,7 +142,7 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
     if args[RUN_CLIENT] == String::from("true") {
         let loop_num = args[LOOP_NUM].parse::<i32>().unwrap();
         let coroutine_num = args[THREAD_NUM].parse::<i32>().unwrap();
-        let (s, r) = async_std::sync::channel((loop_num + (coroutine_num * loop_num)) as usize);
+        let (s, r) = async_std::sync::channel((coroutine_num + (coroutine_num * loop_num)) as usize);
         for i in 0..(loop_num * coroutine_num) {
             s.send(1).await;
         }
