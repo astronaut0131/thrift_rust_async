@@ -21,4 +21,4 @@ try_from = "0.2.0"
 time = "0.1"
 thrift = "0.13.0"
 tokio = { version = "0.2.22", features = ["full"]}
-pprof = { version = "0.3.18", features = ["flamegraph"]}
+#pprof = { version = "0.3.18", features = ["flamegraph"]}
