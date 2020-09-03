@@ -22,8 +22,8 @@ use time::Duration;
 use futures::AsyncWriteExt;
 use thrift::transport::TTcpChannel;
 use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
-
-pub async fn run_client(addr: String, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
+use async_std::sync::Receiver;
+pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
 
@@ -44,13 +44,17 @@ pub async fn run_client(addr: String, loop_num: i32) -> async_thrift::Result<(Bo
 
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
-    for _ in 0..loop_num {
-
-        let before = time::Instant::now();
-        client.ping().await?;
-        let end = time::Instant::now();
-
-        time_array.push((end - before).num_nanoseconds().unwrap());
+    loop {
+        let x = receiver.recv().await.unwrap();
+        if x == 1 {
+            let before = time::Instant::now();
+            client.ping().await?;
+            let end = time::Instant::now();
+            time_array.push((end - before).num_nanoseconds().unwrap());
+        }
+        else {
+            break;
+        }
     }
 
     c.close();

@@ -2,6 +2,7 @@
 use async_thrift::server;
 use async_std::task;
 use async_std::io::Error;
+use async_std::sync::channel;
 
 mod async_thrift_test;
 
@@ -77,7 +78,6 @@ fn run_sync_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
 
             return;
         }
-
     }
 
     if args[RUN_CLIENT] == String::from("true") {
@@ -141,16 +141,29 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
             return;
         }
     }
-
     if args[RUN_CLIENT] == String::from("true") {
+        let loop_num = args[LOOP_NUM].parse::<i32>().unwrap();
+        let coroutine_num = args[THREAD_NUM].parse::<i32>().unwrap();
+        let (s, r) = async_std::sync::channel((loop_num + (coroutine_num * loop_num)) as usize);
+        for i in 0..(loop_num * coroutine_num) {
+            s.send(1).await;
+        }
+        // 0 marks that all jobs has been done
+        for i in 0..coroutine_num {
+            s.send(0).await;
+        }
+
         // time
         let mut list = Vec::new();
-        let start = time::Instant::now();
 
         for i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
             // build client
-            list.push(async_std::task::spawn(async_thrift_test::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap())));
+            list.push(async_std::task::spawn(async_thrift_test::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap(), r.clone())));
         }
+
+        println!("all job generated!");
+
+        let start = time::Instant::now();
 
         // time clock start here
         let raw_time_result = join_all(list).await;
@@ -241,19 +254,19 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
 
         if !PRINT_CSV {
             output[ASYNC_TOKIO_LOCATION] = util::format_result(String::from("async tokio"), args[THREAD_NUM].parse::<i64>().unwrap() * args[LOOP_NUM].parse::<i64>().unwrap(),
-                                                         (end - start).whole_milliseconds() as i64,
-                                                         time_statistic[0], time_statistic[1],
-                                                         time_statistic[2], time_statistic[3],
-                                                         time_statistic[4], time_statistic[5],
-                                                         time_statistic[6]);
+                                                               (end - start).whole_milliseconds() as i64,
+                                                               time_statistic[0], time_statistic[1],
+                                                               time_statistic[2], time_statistic[3],
+                                                               time_statistic[4], time_statistic[5],
+                                                               time_statistic[6]);
         } else {
             output[ASYNC_TOKIO_LOCATION] = util::format_result_csv(String::from("async tokio"), args[THREAD_NUM].parse::<i64>().unwrap(),
-                                                             args[THREAD_NUM].parse::<i64>().unwrap() * args[LOOP_NUM].parse::<i64>().unwrap(),
-                                                             (end - start).whole_milliseconds() as i64,
-                                                             time_statistic[0], time_statistic[1],
-                                                             time_statistic[2], time_statistic[3],
-                                                             time_statistic[4], time_statistic[5],
-                                                             time_statistic[6]);
+                                                                   args[THREAD_NUM].parse::<i64>().unwrap() * args[LOOP_NUM].parse::<i64>().unwrap(),
+                                                                   (end - start).whole_milliseconds() as i64,
+                                                                   time_statistic[0], time_statistic[1],
+                                                                   time_statistic[2], time_statistic[3],
+                                                                   time_statistic[4], time_statistic[5],
+                                                                   time_statistic[6]);
         }
     }
 
