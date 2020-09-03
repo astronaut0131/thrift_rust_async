@@ -4,7 +4,6 @@ use crate::errors::{ApplicationError, ApplicationErrorKind};
 use crate::protocol::{TMessageIdentifier, TMessageType};
 
 pub mod asynced;
-pub mod server_main;
 
 #[async_trait]
 pub trait TAsyncProcessor {

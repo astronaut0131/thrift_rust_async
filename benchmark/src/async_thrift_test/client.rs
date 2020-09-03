@@ -23,11 +23,11 @@ use futures::AsyncWriteExt;
 use thrift::transport::TTcpChannel;
 use crate::async_thrift_test::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
 
-pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
+pub async fn run_client(addr: String, loop_num: i32) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
 
-    let mut stream = TcpStream::connect(addr).await?;
+    let mut stream = TcpStream::connect(addr.as_str()).await?;
 
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
@@ -45,9 +45,10 @@ pub async fn run_client(addr: impl ToSocketAddrs, loop_num: i32) -> async_thrift
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
     for _ in 0..loop_num {
-        let before = time::now();
+
+        let before = time::Instant::now();
         client.ping().await?;
-        let end = time::now();
+        let end = time::Instant::now();
 
         time_array.push((end - before).num_nanoseconds().unwrap());
     }

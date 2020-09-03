@@ -17,6 +17,6 @@ futures = "0.3.5"
 async-std = { version = "1.6.3", features = ["tokio02"] }
 async-trait = "0.1.40"
 try_from = "0.2.0"
-time = "0.1"
+time = "0.2.17"
 thrift = "0.13.0"
 pprof = { version = "0.3.18", features = ["flamegraph"]}

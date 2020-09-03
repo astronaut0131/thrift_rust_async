@@ -109,3 +109,8 @@ pub fn handle_time(time_arrays: Vec<Box<Vec<i64>>>) -> Box<Vec<i64>> {
 
     return Box::new(res);
 }
+
+
+pub fn parse_args(args : &mut Vec<String>){
+
+}

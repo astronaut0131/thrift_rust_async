@@ -70,12 +70,13 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
     pub async fn listen(&mut self, listen_address: &str) -> crate::Result<()> {
         let socket = Socket::new(Domain::ipv4(), Type::stream(), None).unwrap();
         socket.bind(&listen_address.parse::<SocketAddr>().unwrap().into());
-        socket.listen(1024);
+        socket.listen(10000);
 
         let listener = socket.into_tcp_listener();
         let async_listener = TcpListener::from(listener);
 
         let mut incoming = async_listener.incoming();
+
         // let mut count = 0;
         while let Some(stream) = incoming.next().await {
             // stream is a new tcp connection stream
