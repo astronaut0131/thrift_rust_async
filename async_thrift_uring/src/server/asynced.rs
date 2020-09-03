@@ -1,9 +1,6 @@
 use std::sync::Arc;
-use async_std::{
-    net::{TcpListener, TcpStream, SocketAddr},
-    task,
-    prelude::*
-};
+use ringbahn::net::TcpListener;
+
 use crate::transport::{TAsyncReadTransportFactory, TAsyncWriteTransportFactory};
 use crate::transport::async_socket::{TAsyncTcpChannel};
 use crate::protocol::{TAsyncInputProtocolFactory, TAsyncOutputProtocolFactory, TAsyncInputProtocol, TAsyncOutputProtocol};
@@ -11,7 +8,6 @@ use crate::errors::TransportErrorKind;
 use crate::{ApplicationError, ApplicationErrorKind};
 use super::TAsyncProcessor;
 use crate::transport::TAsyncIoChannel;
-use socket2::{Socket, Domain, Type};
 
 
 pub struct TAsyncServer<PRC, RTF, IPF, WTF, OPF>
@@ -68,14 +64,10 @@ impl<PRC, RTF, IPF, WTF, OPF> TAsyncServer<PRC, RTF, IPF, WTF, OPF>
     /// Return `Err` when the server cannot bind to `listen_address` or there
     /// is an unrecoverable error.
     pub async fn listen(&mut self, listen_address: &str) -> crate::Result<()> {
-        let socket = Socket::new(Domain::ipv4(), Type::stream(), None).unwrap();
-        socket.bind(&listen_address.parse::<SocketAddr>().unwrap().into());
-        socket.listen(1024);
+        let mut listener = TcpListener::bind(listen_address).unwrap();
+        println!("listening on port 7878");
+        let mut incoming = listener.incoming();
 
-        let listener = socket.into_tcp_listener();
-        let async_listener = TcpListener::from(listener);
-
-        let mut incoming = async_listener.incoming();
         // let mut count = 0;
         while let Some(stream) = incoming.next().await {
             // stream is a new tcp connection stream

@@ -20,6 +20,7 @@ use async_thrift::protocol::async_binary::{TAsyncBinaryInputProtocol, TAsyncBina
 use async_thrift::transport::async_framed::{TAsyncFramedReadTransport, TAsyncFramedWriteTransport};
 use async_thrift::transport::TAsyncIoChannel;
 use thrift::transport::TTcpChannel;
+use std::fs::File;
 
 
 // util
@@ -32,14 +33,14 @@ const ASYNC_LOCATION: usize = 2;
 
 /// config parameter
 // number of clients
-const THREAD_NUM: i32 = 32;
+const THREAD_NUM: i32 = 100;
 // number of calls for each client
-const LOOP_NUM: i32 = 5000;
+const LOOP_NUM: i32 = 10000;
 
 // whether to run component
 const RUN_CLIENT: bool = true;
-const RUN_SERVER: bool = true;
-const RUN_SYNC: bool = true;
+const RUN_SERVER: bool = false;
+const RUN_SYNC: bool = false;
 const RUN_ASYNC: bool = true;
 
 // addr to connect
@@ -159,6 +160,9 @@ async fn run_async_both(output: &mut Vec<String>) {
 }
 
 fn main() {
+    let guard = pprof::ProfilerGuard::new(100).unwrap();
+
+
     let mut output = vec![String::new(), String::new(), String::new()];
 
     util::print_welcome();
@@ -168,9 +172,14 @@ fn main() {
         task::block_on(run_async_both(&mut output));
     }
     // sync part
-    if RUN_SYNC {
-        run_sync_both(&mut output);
-    }
+    // if RUN_SYNC {
+    //     run_sync_both(&mut output);
+    // }
+
+    if let Ok(report) = guard.report().build() {
+        let file = File::create("flamegraph.svg").unwrap();
+        report.flamegraph(file).unwrap();
+    };
 
     util::print_result(&output);
 }
