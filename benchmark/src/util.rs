@@ -97,30 +97,31 @@ pub fn handle_time(time_arrays: Vec<Box<Vec<i64>>>) -> Box<Vec<i64>> {
     times.sort();
     let mut res = Vec::new();
 
-    res.push(1);
-    res.push(1);
-    res.push(1);
-    res.push(1);
-    res.push(1);
-    res.push(1);
-    res.push(1);
-    return Box::new(res);
+    // fake data
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // res.push(1);
+    // return Box::new(res);
 
 
-    // // avg
-    // res.push(sum / count);
-    // // per 50
-    // res.push(times[times.len() / 2]);
-    // // per 90
-    // res.push(times[(times.len() / 10) * 9]);
-    // // per 95
-    // res.push(times[(times.len() / 100) * 95]);
-    // // per 99
-    // res.push(times[(times.len() / 100) * 99]);
-    // // per 99.9
-    // res.push(times[(times.len() / 1000) * 999]);
-    // // max time
-    // res.push(times[times.len() - 1]);
+    // avg
+    res.push(sum / count);
+    // per 50
+    res.push(times[times.len() / 2]);
+    // per 90
+    res.push(times[(times.len() / 10) * 9]);
+    // per 95
+    res.push(times[(times.len() / 100) * 95]);
+    // per 99
+    res.push(times[(times.len() / 100) * 99]);
+    // per 99.9
+    res.push(times[(times.len() / 1000) * 999]);
+    // max time
+    res.push(times[times.len() - 1]);
 
     return Box::new(res);
 }

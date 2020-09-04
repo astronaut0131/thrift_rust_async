@@ -46,10 +46,10 @@ pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) ->
     loop {
         let x = receiver.recv().await.unwrap();
         if x == 1 {
-            // let before = time::Instant::now();
+            let before = time::Instant::now();
             client.ping().await?;
-            // let end = time::Instant::now();
-            // time_array.push((end - before).num_nanoseconds().unwrap());
+            let end = time::Instant::now();
+            time_array.push((end - before).num_nanoseconds().unwrap());
         }
         else {
             break;

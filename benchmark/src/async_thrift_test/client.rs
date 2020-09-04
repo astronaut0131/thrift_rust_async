@@ -48,9 +48,10 @@ pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<Vec<i8>>
     loop {
         let vec = receiver.recv().await.unwrap();
         if vec.len() > 1 {
-            // let before = time::Instant::now();
+            let before = time::Instant::now();
             let s = client.echo(vec).await?;
-            // let end = time::Instant::now();
+            let end = time::Instant::now();
+            time_array.push((end - before).num_nanoseconds().unwrap());
         } else {
             break;
         }

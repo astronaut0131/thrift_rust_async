@@ -164,7 +164,7 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
             list.push(async_std::task::spawn(async_thrift_test::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap(), r.clone())));
         }
 
-        println!("all job generated!");
+        println!("all jobs generated!");
 
         let start = time::Instant::now();
 
@@ -233,7 +233,6 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
     if args[RUN_CLIENT] == String::from("true") {
         // time
         let mut list = Vec::new();
-        let start = time::Instant::now();
 
         let loop_num = args[LOOP_NUM].parse::<i32>().unwrap();
         let coroutine_num = args[THREAD_NUM].parse::<i32>().unwrap();
@@ -250,7 +249,8 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
             // build client
             list.push(tokio::task::spawn(async_thrift_test_tokio::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap(),r.clone())));
         }
-
+        
+        let start = time::Instant::now();
         // time clock start here
         let raw_time_result = join_all(list).await;
 
