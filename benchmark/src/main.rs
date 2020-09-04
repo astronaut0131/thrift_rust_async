@@ -293,7 +293,6 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
 }
 
 fn main() {
-    // let guard = pprof::ProfilerGuard::new(100).unwrap();
     let mut args: Vec<String> = vec![String::from(DEFAULT_RUN_CLIENT),
                                      String::from(DEFAULT_RUN_SERVER),
                                      String::from(DEFAULT_RUN_SYNC),
@@ -327,10 +326,6 @@ fn main() {
     if arc_args[RUN_SYNC] == String::from("true") {
         run_sync_both(&mut output, Arc::clone(&arc_args));
     }
-    // if let Ok(report) = guard.report().build() {
-    //     let file = File::create("flamegraph.svg").unwrap();
-    //     report.flamegraph(file).unwrap();
-    // };
     util::print_result(&output);
 }
 
