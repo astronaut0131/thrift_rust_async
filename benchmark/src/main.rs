@@ -1,7 +1,7 @@
-extern crate jemallocator;
+//extern crate jemallocator;
 
-#[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+//#[global_allocator]
+//static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 use std::cell::RefCell;
 use std::fs::File;
@@ -54,8 +54,8 @@ const PRINT_CSV: bool = false;
 const DEFAULT_RUN_CLIENT: &str = "true";
 const DEFAULT_RUN_SERVER: &str = "true";
 const DEFAULT_RUN_SYNC: &str = "false";
-const DEFAULT_RUN_ASYNC: &str = "true";
-const DEFAULT_RUN_ASYNC_TOKIO: &str = "false";
+const DEFAULT_RUN_ASYNC: &str = "false";
+const DEFAULT_RUN_ASYNC_TOKIO: &str = "true";
 const DEFAULT_THREAD_NUM: &str = "30";
 const DEFAULT_LOOP_NUM: &str = "1000";
 const DEFAULT_ADDR: &str = "127.0.0.1:9090";
@@ -264,7 +264,7 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
                                                                time_statistic[6]);
         } else {
             output[ASYNC_TOKIO_LOCATION] = util::format_result_csv(String::from("async tokio"), args[THREAD_NUM].parse::<i64>().unwrap(),
-                                                                   args[THREAD_NUM].parse::<i64>().unwrap() * args[LOOP_NUM].parse::<i64>().unwrap(),
+                                                                   args[LOOP_NUM].parse::<i64>().unwrap(),
                                                                    (end - start).whole_milliseconds() as i64,
                                                                    time_statistic[0], time_statistic[1],
                                                                    time_statistic[2], time_statistic[3],

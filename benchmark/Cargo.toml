@@ -21,5 +21,5 @@ try_from = "0.2.0"
 time = "0.2.17"
 thrift = "0.13.0"
 tokio = { version = "0.2.22", features = ["full"]}
-pprof = { version = "0.3.18", features = ["flamegraph"]}
-jemallocator = "0.3.2"
+#pprof = { version = "0.3.18", features = ["flamegraph"]}
+#jemallocator = "0.3.2"

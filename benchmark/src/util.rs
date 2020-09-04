@@ -19,12 +19,12 @@ pub fn format_result_csv(mode: String, client_num: i64, loop_num: i64, total_tim
                          avg_time: i64, per_50_time: i64, per_90_time: i64,
                          per_95_time: i64, per_99_time: i64,
                          per_999_time: i64, max_time: i64) -> String {
-    let call_num = client_num * total_time_in_ms;
+    let call_num = client_num * loop_num;
 
     format!("### {}
 client_num,loop_num,call_num,total_time,qps,avg,per50,per90,per95,per_99,per_999,max
-{},{},{},{},{},{},{},{},{},{},{}"
-            , mode, client_num, loop_num, call_num, (1000 * call_num / total_time_in_ms),
+{},{},{},{},{},{},{},{},{},{},{},{}"
+            , mode, client_num, loop_num, call_num, total_time_in_ms, (1000 * call_num / total_time_in_ms),
             avg_time / 1000, per_50_time / 1000, per_90_time / 1000, per_95_time / 1000, per_99_time / 1000, per_999_time / 1000, max_time / 1000)
 }
 
