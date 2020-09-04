@@ -25,7 +25,7 @@ use crate::async_thrift_test::echo::{LongMessageTestSyncClient,TLongMessageTestS
 pub type Result<T> = std::result::Result<T, Error>;
 
 
-pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) -> async_thrift::Result<(Box<Vec<i64>>)> {
+pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<Vec<i8>>) -> async_thrift::Result<(Box<Vec<i64>>)> {
     // time
     // let start = time::now();
 
@@ -47,12 +47,11 @@ pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) ->
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
     loop {
-        let x = receiver.recv().await.unwrap();
-        if x == 1 {
-            let before = time::Instant::now();
-            let s = client.echo(vec![0;996]).await?;
-            let end = time::Instant::now();
-            time_array.push((end - before).num_nanoseconds().unwrap());
+        let vec = receiver.recv().await.unwrap();
+        if vec.len() > 1 {
+            // let before = time::Instant::now();
+            let s = client.echo(vec).await?;
+            // let end = time::Instant::now();
         } else {
             break;
         }

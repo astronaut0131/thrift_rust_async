@@ -51,8 +51,8 @@ const DEFAULT_RUN_SERVER: &str = "true";
 const DEFAULT_RUN_SYNC: &str = "false";
 const DEFAULT_RUN_ASYNC: &str = "true";
 const DEFAULT_RUN_ASYNC_TOKIO: &str = "false";
-const DEFAULT_THREAD_NUM: &str = "300";
-const DEFAULT_LOOP_NUM: &str = "5000";
+const DEFAULT_THREAD_NUM: &str = "30";
+const DEFAULT_LOOP_NUM: &str = "1000";
 const DEFAULT_ADDR: &str = "127.0.0.1:9090";
 
 // run sync server and client
@@ -144,11 +144,11 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
         let coroutine_num = args[THREAD_NUM].parse::<i32>().unwrap();
         let (s, r) = async_std::sync::channel((coroutine_num + (coroutine_num * loop_num)) as usize);
         for i in 0..(loop_num * coroutine_num) {
-            s.send(1).await;
+            s.send(vec![0;996]).await;
         }
         // 0 marks that all jobs has been done
         for i in 0..coroutine_num {
-            s.send(0).await;
+            s.send(vec![0;0]).await;
         }
 
         // time
@@ -277,6 +277,7 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
 }
 
 fn main() {
+    let guard = pprof::ProfilerGuard::new(100).unwrap();
     let mut args: Vec<String> = vec![String::from(DEFAULT_RUN_CLIENT),
                                      String::from(DEFAULT_RUN_SERVER),
                                      String::from(DEFAULT_RUN_SYNC),
@@ -310,7 +311,10 @@ fn main() {
     if arc_args[RUN_SYNC] == String::from("true") {
         run_sync_both(&mut output, Arc::clone(&arc_args));
     }
-
+    if let Ok(report) = guard.report().build() {
+        let file = File::create("flamegraph.svg").unwrap();
+        report.flamegraph(file).unwrap();
+    };
     util::print_result(&output);
 }
 

@@ -6,10 +6,10 @@ use async_trait::async_trait;
 use super::{AsyncRead, AsyncWrite, TAsyncReadTransport, TAsyncReadTransportFactory, TAsyncWriteTransport, TAsyncWriteTransportFactory};
 
 /// Default capacity of the read buffer in bytes.
-const READ_CAPACITY: usize = 1024;
+const READ_CAPACITY: usize = 4096;
 
 /// Default capacity of the write buffer in bytes..
-const WRITE_CAPACITY: usize = 1024;
+const WRITE_CAPACITY: usize = 4096;
 
 
 #[derive(Debug)]
