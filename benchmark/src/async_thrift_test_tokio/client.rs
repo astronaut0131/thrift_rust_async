@@ -19,11 +19,11 @@ use async_thrift_tokio::transport::async_framed::{TAsyncFramedReadTransport, TAs
 use async_thrift_tokio::transport::async_socket::TAsyncTcpChannel;
 
 use crate::async_thrift_test_tokio::tutorial::{CalculatorSyncClient, TCalculatorSyncClient};
-
+use async_std::sync::Receiver;
 pub type Result<T> = std::result::Result<T, Error>;
 
 
-pub async fn run_client(addr: String, loop_num: i32) -> async_thrift_tokio::Result<Box<Vec<i64>>> {
+pub async fn run_client(addr: String, loop_num: i32, receiver: Receiver<i32>) -> async_thrift_tokio::Result<Box<Vec<i64>>> {
     // time
     // let start = time::now();
     let stream = TcpStream::connect(addr.as_str()).await?;
@@ -43,12 +43,17 @@ pub async fn run_client(addr: String, loop_num: i32) -> async_thrift_tokio::Resu
 
     let mut time_array = Vec::with_capacity(loop_num as usize);
 
-    for _ in 0..loop_num {
-        let before = time::Instant::now();
-        client.ping().await?;
-        let end = time::Instant::now();
-
-        time_array.push((end - before).num_nanoseconds().unwrap());
+    loop {
+        let x = receiver.recv().await.unwrap();
+        if x == 1 {
+            // let before = time::Instant::now();
+            client.ping().await?;
+            // let end = time::Instant::now();
+            // time_array.push((end - before).num_nanoseconds().unwrap());
+        }
+        else {
+            break;
+        }
     }
 
     c.close();

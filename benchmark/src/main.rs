@@ -235,9 +235,20 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
         let mut list = Vec::new();
         let start = time::Instant::now();
 
+        let loop_num = args[LOOP_NUM].parse::<i32>().unwrap();
+        let coroutine_num = args[THREAD_NUM].parse::<i32>().unwrap();
+        let (s, r) = async_std::sync::channel((coroutine_num + (coroutine_num * loop_num)) as usize);
+        for _i in 0..(loop_num * coroutine_num) {
+            s.send(1).await;
+        }
+        // 0 marks that all jobs has been done
+        for _i in 0..coroutine_num {
+            s.send(0).await;
+        }
+
         for _i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
             // build client
-            list.push(tokio::task::spawn(async_thrift_test_tokio::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap())));
+            list.push(tokio::task::spawn(async_thrift_test_tokio::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap(),r.clone())));
         }
 
         // time clock start here
