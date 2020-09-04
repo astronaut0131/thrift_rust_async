@@ -40,7 +40,7 @@ pub fn run(stream: TcpStream, loop_num: i32) -> thrift::Result<(Box<Vec<i64>>)> 
     );
 
     let mut client = CalculatorSyncClient::new(i_prot, o_prot);
-    for i in 0..loop_num {
+    for _i in 0..loop_num {
         let before = time::Instant::now();
         client.ping()?;
         let end = time::Instant::now();

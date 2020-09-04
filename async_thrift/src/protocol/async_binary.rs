@@ -1,8 +1,6 @@
 use std::convert::{From, TryFrom};
-use std::io::Cursor;
-
 use async_trait::async_trait;
-use byteorder::{BigEndian, ByteOrder, ReadBytesExt, WriteBytesExt};
+use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 
 use crate::errors::{Error, ProtocolError, ProtocolErrorKind};
 use crate::transport::{TAsyncReadTransport, TAsyncWriteTransport};
@@ -382,7 +380,6 @@ impl<T> TAsyncOutputProtocol for TAsyncBinaryOutputProtocol<T>
     async fn write_i16(&mut self, i: i16) -> crate::Result<()> {
         BigEndian::write_i16(&mut self.buf2, i);
         self.transport.write(&self.buf2).await;
-        ///
         Ok(())
     }
 

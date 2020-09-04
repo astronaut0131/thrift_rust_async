@@ -4,7 +4,6 @@
 use std::io::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use futures::AsyncWriteExt;
 use time::Duration;
 use tokio::{
     net::{TcpStream, ToSocketAddrs},
@@ -24,10 +23,10 @@ use crate::async_thrift_test_tokio::tutorial::{CalculatorSyncClient, TCalculator
 pub type Result<T> = std::result::Result<T, Error>;
 
 
-pub async fn run_client(addr: String, loop_num: i32) -> async_thrift_tokio::Result<(Box<Vec<i64>>)> {
+pub async fn run_client(addr: String, loop_num: i32) -> async_thrift_tokio::Result<Box<Vec<i64>>> {
     // time
     // let start = time::now();
-    let mut stream = TcpStream::connect(addr.as_str()).await?;
+    let stream = TcpStream::connect(addr.as_str()).await?;
 
     let mut c = TAsyncTcpChannel::with_stream(stream);
 
@@ -55,32 +54,4 @@ pub async fn run_client(addr: String, loop_num: i32) -> async_thrift_tokio::Resu
     c.close();
 
     Ok((Box::new(time_array)))
-}
-
-
-// test transport
-pub async fn try_run(addr: impl ToSocketAddrs) -> Result<()> {
-    let stream = TcpStream::connect(addr).await?;
-    let c = TAsyncTcpChannel::with_stream(stream);
-    let mut t = TAsyncFramedWriteTransport::new(c);
-
-    t.write(&[0x00, 0x00, 0x00, 0x02, 0x02, 0x01]).await?;
-    t.flush().await?;
-    Ok(())
-}
-
-// test protocol
-pub async fn try_run_protocol(addr: impl ToSocketAddrs) -> Result<()> {
-    let stream = TcpStream::connect(addr).await?;
-    let mut channel = TAsyncTcpChannel::with_stream(stream);
-
-    let t = TAsyncFramedWriteTransport::new(channel);
-    let mut protocol = TAsyncBinaryOutputProtocol::new(t, true);
-
-    protocol.write_field_begin(&TFieldIdentifier::new("string_thing", TType::String, 1)).await.unwrap();
-    protocol.write_string("foo").await.unwrap();
-    protocol.write_field_end().await.unwrap();
-    protocol.flush().await;
-
-    Ok(())
 }

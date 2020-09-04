@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use socket2::{Domain, Socket, Type};
 use tokio::{
     net::{TcpListener, TcpStream, ToSocketAddrs},
     prelude::*,

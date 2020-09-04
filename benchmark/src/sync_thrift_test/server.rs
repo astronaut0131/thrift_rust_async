@@ -8,9 +8,7 @@ use thrift::transport::{TBufferedReadTransportFactory, TBufferedWriteTransportFa
 use crate::sync_thrift_test::tutorial::{CalculatorSyncHandler, CalculatorSyncProcessor};
 
 pub fn run(addr: &str) -> thrift::Result<()> {
-    let port = 9090;
     let protocol = "binary";
-    let service = "part";
     let listen_address = addr;
 
     let r_transport_factory = TBufferedReadTransportFactory::new();

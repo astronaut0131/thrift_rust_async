@@ -91,9 +91,9 @@ fn run_sync_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
         let mut list = Vec::new();
 
 
-        for i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
+        for _i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
             // to ensure tcp sync queue is enough
-            let mut stream = std::net::TcpStream::connect(args[ADDR].as_str()).unwrap();
+            let stream = std::net::TcpStream::connect(args[ADDR].as_str()).unwrap();
             // build client
             let loop_num = args[LOOP_NUM].parse::<i32>().unwrap();
             //
@@ -148,18 +148,18 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
         let loop_num = args[LOOP_NUM].parse::<i32>().unwrap();
         let coroutine_num = args[THREAD_NUM].parse::<i32>().unwrap();
         let (s, r) = async_std::sync::channel((coroutine_num + (coroutine_num * loop_num)) as usize);
-        for i in 0..(loop_num * coroutine_num) {
+        for _i in 0..(loop_num * coroutine_num) {
             s.send(vec![0;996]).await;
         }
         // 0 marks that all jobs has been done
-        for i in 0..coroutine_num {
+        for _i in 0..coroutine_num {
             s.send(vec![0;0]).await;
         }
 
         // time
         let mut list = Vec::new();
 
-        for i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
+        for _i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
             // build client
             list.push(async_std::task::spawn(async_thrift_test::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap(), r.clone())));
         }
@@ -235,7 +235,7 @@ async fn run_async_tokio_both(output: &mut Vec<String>, args: Arc<Vec<String>>) 
         let mut list = Vec::new();
         let start = time::Instant::now();
 
-        for i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
+        for _i in 0..args[THREAD_NUM].parse::<i32>().unwrap() {
             // build client
             list.push(tokio::task::spawn(async_thrift_test_tokio::client::run_client(Clone::clone(addr), args[LOOP_NUM].parse::<i32>().unwrap())));
         }
