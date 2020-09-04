@@ -1,4 +1,89 @@
 # rs
+
+## 本项目层级解释
+
+```
+├── Cargo.lock
+├── Cargo.toml
+├── README.md
+├── async_thrift			# 采用async-std实现的异步thrift 
+│   ├── Cargo.toml	
+│   └── src				# 源码
+│       ├── autogen.rs			
+│       ├── errors.rs
+│       ├── lib.rs
+│       ├── protocol			# 协议层， 支持了binary protocol
+│       │   ├── async_binary.rs
+│       │   └── mod.rs
+│       ├── server			# 异步服务端
+│       │   ├── asynced.rs
+│       │   └── mod.rs
+│       └── transport			# 传输层 提供了 buffered 以及 framed两种传输方式
+│           ├── async_buffered.rs
+│           ├── async_framed.rs
+│           ├── async_socket.rs
+│           └── mod.rs
+├── async_thrift_tokio			# 采用tokio实现的异步thrift 
+│   ├── Cargo.toml
+│   └── src
+│       ├── autogen.rs
+│       ├── errors.rs
+│       ├── lib.rs
+│       ├── protocol
+│       │   ├── async_binary.rs
+│       │   └── mod.rs
+│       ├── server
+│       │   ├── asynced.rs
+│       │   └── mod.rs
+│       └── transport
+│           ├── async_buffered.rs
+│           ├── async_framed.rs
+│           ├── async_socket.rs
+│           └── mod.rs
+├── async_thrift_uring			# 采用io-uring实现的异步thrift 
+│   ├── Cargo.toml
+│   └── src
+│       ├── autogen.rs
+│       ├── errors.rs
+│       ├── lib.rs
+│       ├── protocol
+│       │   ├── async_binary.rs
+│       │   └── mod.rs
+│       ├── server
+│       │   ├── asynced.rs
+│       │   └── mod.rs
+│       └── transport
+│           ├── async_buffered.rs
+│           ├── async_framed.rs
+│           ├── async_socket.rs
+│           └── mod.rs
+├── benchmark				# 性能测试包 
+│   ├── Cargo.toml
+│   ├── README.md
+│   ├── benchmark.sh
+│   ├── benchmark_all.sh
+│   └── src
+│       ├── async_thrift_test		# async-std版性能测试
+│       │   ├── bytes.thrift
+│       │   ├── client.rs
+│       │   ├── echo.rs
+│       │   ├── mod.rs
+│       │   ├── server.rs
+│       │   └── tutorial.rs
+│       ├── async_thrift_test_tokio	# tokio版性能测试
+│       │   ├── client.rs
+│       │   ├── mod.rs
+│       │   ├── server.rs
+│       │   └── tutorial.rs
+│       ├── main.rs			# 测试主函数
+│       ├── sync_thrift_test		# 同步版性能测试
+│       │   ├── client.rs
+│       │   ├── mod.rs
+│       │   ├── server.rs
+│       │   └── tutorial.rs
+│       └── util.rs			# 测试打印依赖文件
+└── benchmark_result.md
+```
 ​	
 
 # 使用thrift生成rust代码
@@ -370,89 +455,5 @@ Map ,List 和Set常量需要一个常量结构体包含
 目前 async uring 代码还没有完成，暂时无法使用
 
 
-## 文件层级图
-
-```
-├── Cargo.lock
-├── Cargo.toml
-├── README.md
-├── async_thrift			# 采用async-std实现的异步thrift 
-│   ├── Cargo.toml	
-│   └── src				# 源码
-│       ├── autogen.rs			
-│       ├── errors.rs
-│       ├── lib.rs
-│       ├── protocol			# 协议层， 支持了binary protocol
-│       │   ├── async_binary.rs
-│       │   └── mod.rs
-│       ├── server			# 异步服务端
-│       │   ├── asynced.rs
-│       │   └── mod.rs
-│       └── transport			# 传输层 提供了 buffered 以及 framed两种传输方式
-│           ├── async_buffered.rs
-│           ├── async_framed.rs
-│           ├── async_socket.rs
-│           └── mod.rs
-├── async_thrift_tokio			# 采用tokio实现的异步thrift 
-│   ├── Cargo.toml
-│   └── src
-│       ├── autogen.rs
-│       ├── errors.rs
-│       ├── lib.rs
-│       ├── protocol
-│       │   ├── async_binary.rs
-│       │   └── mod.rs
-│       ├── server
-│       │   ├── asynced.rs
-│       │   └── mod.rs
-│       └── transport
-│           ├── async_buffered.rs
-│           ├── async_framed.rs
-│           ├── async_socket.rs
-│           └── mod.rs
-├── async_thrift_uring			# 采用io-uring实现的异步thrift 
-│   ├── Cargo.toml
-│   └── src
-│       ├── autogen.rs
-│       ├── errors.rs
-│       ├── lib.rs
-│       ├── protocol
-│       │   ├── async_binary.rs
-│       │   └── mod.rs
-│       ├── server
-│       │   ├── asynced.rs
-│       │   └── mod.rs
-│       └── transport
-│           ├── async_buffered.rs
-│           ├── async_framed.rs
-│           ├── async_socket.rs
-│           └── mod.rs
-├── benchmark				# 性能测试包 
-│   ├── Cargo.toml
-│   ├── README.md
-│   ├── benchmark.sh
-│   ├── benchmark_all.sh
-│   └── src
-│       ├── async_thrift_test		# async-std版性能测试
-│       │   ├── bytes.thrift
-│       │   ├── client.rs
-│       │   ├── echo.rs
-│       │   ├── mod.rs
-│       │   ├── server.rs
-│       │   └── tutorial.rs
-│       ├── async_thrift_test_tokio	# tokio版性能测试
-│       │   ├── client.rs
-│       │   ├── mod.rs
-│       │   ├── server.rs
-│       │   └── tutorial.rs
-│       ├── main.rs			# 测试主函数
-│       ├── sync_thrift_test		# 同步版性能测试
-│       │   ├── client.rs
-│       │   ├── mod.rs
-│       │   ├── server.rs
-│       │   └── tutorial.rs
-│       └── util.rs			# 测试打印依赖文件
-└── benchmark_result.md
-```
 
 
