@@ -1,4 +1,4 @@
-# thrift rust async rpc framework
+# Rust async thrift rpc framework
 
 ## 本项目层级解释
 
