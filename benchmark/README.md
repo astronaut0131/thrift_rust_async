@@ -10,17 +10,23 @@
 ###config
 |  thread num   | loop num  | total call |
 |  -----------  | --------  | ---------- |
-|      50      |    1_000    |    50_000    |
+|      100      |    1_000    |    100_000    |
 
 ###sync
 |  total time |   query per second  |  avg time   |  per 50 time |  per 90 time |  per 95 time |  per 99 time | per 99.9 time | max time |
 |  ---------  |   ----------------  | ----------  | ------------ | ------------ | ------------ | ------------ | ----------- |  -------- |
-|    7605 ms  |        6574        |    3877 us   |    144 us   |     146 us    |    148 us    |   231 us   |   1090  us  |   7441923  us  |
+|    4560 ms  |        21929        |    4551 us   |    3379 us   |     7907 us    |    10940 us    |   19984 us   |   60659  us  |   107242  us  |
 
 ###async
 |  total time |   query per second  |  avg time   |  per 50 time |  per 90 time |  per 95 time |  per 99 time | per 99.9 time | max time |
 |  ---------  |   ----------------  | ----------  | ------------ | ------------ | ------------ | ------------ | ----------- |  -------- |
-|    4932 ms  |        10137        |    4906 us   |    4916 us   |     6362 us    |    6743 us    |   7835 us   |   10896  us  |   21463  us  |
+|    3321 ms  |        30111        |    3218 us   |    2288 us   |     6520 us    |    9595 us    |   20560 us   |   77867  us  |   138380  us  |
+
+
+###async tokio
+|  total time |   query per second  |  avg time   |  per 50 time |  per 90 time |  per 95 time |  per 99 time | per 99.9 time | max time |
+|  ---------  |   ----------------  | ----------  | ------------ | ------------ | ------------ | ------------ | ----------- |  -------- |
+|    4384 ms  |        29810        |    4377 us   |    3487 us   |     7762 us    |    10524 us    |   17309 us   |   29969  us  |   48469  us  |
 
 
 * 实现通过配置的方式独立或同时运行server和client，独立或同时测试sync和async

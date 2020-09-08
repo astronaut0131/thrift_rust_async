@@ -53,10 +53,10 @@ const PRINT_CSV: bool = false;
 ///
 const DEFAULT_RUN_CLIENT: &str = "true";
 const DEFAULT_RUN_SERVER: &str = "true";
-const DEFAULT_RUN_SYNC: &str = "false";
-const DEFAULT_RUN_ASYNC: &str = "false";
+const DEFAULT_RUN_SYNC: &str = "true";
+const DEFAULT_RUN_ASYNC: &str = "true";
 const DEFAULT_RUN_ASYNC_TOKIO: &str = "true";
-const DEFAULT_THREAD_NUM: &str = "30";
+const DEFAULT_THREAD_NUM: &str = "100";
 const DEFAULT_LOOP_NUM: &str = "1000";
 const DEFAULT_ADDR: &str = "127.0.0.1:9090";
 
@@ -149,7 +149,7 @@ async fn run_async_both(output: &mut Vec<String>, args: Arc<Vec<String>>) {
         let coroutine_num = args[THREAD_NUM].parse::<i32>().unwrap();
         let (s, r) = async_std::sync::channel((coroutine_num + (coroutine_num * loop_num)) as usize);
         for _i in 0..(loop_num * coroutine_num) {
-            s.send(vec![0;996]).await;
+            s.send(vec![0;1]).await;
         }
         // 0 marks that all jobs has been done
         for _i in 0..coroutine_num {

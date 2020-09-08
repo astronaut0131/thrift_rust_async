@@ -10,7 +10,7 @@ use crate::async_thrift_test::tutorial::{CalculatorSyncHandler, CalculatorSyncPr
 use crate::async_thrift_test::echo::{LongMessageTestSyncProcessor, LongMessageTestSyncHandler};
 
 pub async fn run_server(addr: String) {
-    let processor = LongMessageTestSyncProcessor::new(PartHandler {});
+    let processor = CalculatorSyncProcessor::new(PartHandler {});
     let r_trans_factory = TAsyncBufferedReadTransportFactory::new();
     let w_trans_factory = TAsyncBufferedWriteTransportFactory::new();
     let i_proto_factory = TAsyncBinaryInputProtocolFactory::new();
@@ -23,17 +23,17 @@ pub async fn run_server(addr: String) {
 struct PartHandler {}
 
 #[async_trait]
-// impl CalculatorSyncHandler for PartHandler {
-//     async fn handle_ping(&self) -> async_thrift::Result<()> {
-//         Ok(())
-//     }
-// }
-impl LongMessageTestSyncHandler for PartHandler {
-    // async fn handle_ping(&self) -> async_thrift::Result<()> {
-    //     Ok(())
-    // }
-
-    async fn handle_echo(&self, input: Vec<i8>) -> async_thrift::Result<Vec<i8>> {
-        Ok(input)
+impl CalculatorSyncHandler for PartHandler {
+    async fn handle_ping(&self) -> async_thrift::Result<()> {
+        Ok(())
     }
 }
+// impl LongMessageTestSyncHandler for PartHandler {
+//     // async fn handle_ping(&self) -> async_thrift::Result<()> {
+//     //     Ok(())
+//     // }
+//
+//     async fn handle_echo(&self, input: Vec<i8>) -> async_thrift::Result<Vec<i8>> {
+//         Ok(input)
+//     }
+// }
